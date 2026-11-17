@@ -64,9 +64,9 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
     const heading = document.querySelector(selector);
     const children = [...heading.children].filter(child => !child.classList.contains('engagement-terms'));
     const reveal = gsap.timeline({ scrollTrigger: { trigger: heading, start: 'top 84%' }, defaults: { ease: 'power3.out' } })
-      .from(children[0], { opacity: 0, x: -18, duration: .75 })
-      .from(children[1], { opacity: 0, y: 35, scaleY: .97, transformOrigin: '50% 100%', duration: .95 }, '-=.48');
-    if (children.length > 2) reveal.from(children.slice(2), { opacity: 0, y: 16, duration: .7, stagger: .1 }, '-=.48');
+      .from(children[0], { opacity: 0, x: -18, duration: .6 })
+      .from(children[1], { opacity: 0, y: 30, scaleY: .98, transformOrigin: '50% 100%', duration: .85 }, '-=.4');
+    if (children.length > 2) reveal.from(children.slice(2), { opacity: 0, y: 13, duration: .65, stagger: .08 }, '-=.65');
   }
   document.querySelectorAll('.practice-list > div, .service-list > div').forEach(row => {
     const [number, title, detail] = row.children;
