@@ -39,7 +39,6 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   const hero = document.querySelector('.hero');
   gsap.timeline({ defaults: { ease: 'power3.out' } })
     .from(hero.querySelector('.story-rule'), { scaleX: 0, duration: 1.05 })
-    .from(hero.querySelector('.eyebrow'), { opacity: 0, x: -16, duration: .75 }, '-=.75')
     .from(hero.querySelectorAll('.type-line'), { opacity: 0, y: 42, rotationX: -8, scaleY: .97, transformOrigin: '50% 100%', stagger: .13, duration: 1.1 }, '-=.4')
     .from(hero.querySelector('.lede'), { opacity: 0, y: 18, duration: .85 }, '-=.55')
     .from(hero.querySelector('.explore-button'), { opacity: 0, y: 20, scale: .96, duration: .8 }, '-=.48');
