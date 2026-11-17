@@ -83,7 +83,7 @@ const heightAt = (x, z) => {
 
 try {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#f6f7f3');
+  scene.background = new THREE.Color('#f4f1e9');
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -113,7 +113,7 @@ try {
   floor.receiveShadow = true;
   scene.add(floor);
 
-  const slab = new THREE.Mesh(new THREE.BoxGeometry(16, .45, 16), new THREE.MeshStandardMaterial({ color: '#d4dad9', roughness: 1 }));
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(16, .45, 16), new THREE.MeshStandardMaterial({ color: '#c6cbc5', roughness: 1 }));
   slab.position.y = -.275;
   slab.castShadow = true;
   slab.receiveShadow = true;
@@ -126,9 +126,9 @@ try {
   terrainGeometry.rotateX(-Math.PI / 2);
   const position = terrainGeometry.attributes.position;
   const colors = [];
-  const low = new THREE.Color('#e1eae6');
-  const mid = new THREE.Color('#bad0c8');
-  const high = new THREE.Color('#8eaFA7');
+  const low = new THREE.Color('#e9e9de');
+  const mid = new THREE.Color('#c6d6cd');
+  const high = new THREE.Color('#91afa7');
   for (let i = 0; i < position.count; i++) {
     const x = position.getX(i), z = position.getZ(i), y = heightAt(x, z);
     position.setY(i, y);
@@ -231,6 +231,20 @@ try {
         const x = Math.cos(angle), z = Math.sin(angle);
         addPath(group, [[x * .56, .055, z * .56], [x * .72, .055, z * .72]], inkMaterial, .024);
       }
+      const bearingPoints = [];
+      for (let i = 0; i < 32; i++) {
+        const angle = i * Math.PI / 16;
+        const outer = 1.78 + (i % 4) * .18;
+        bearingPoints.push(
+          new THREE.Vector3(Math.cos(angle) * 1.22, .19, Math.sin(angle) * 1.22),
+          new THREE.Vector3(Math.cos(angle) * outer, .19, Math.sin(angle) * outer)
+        );
+      }
+      const bearings = new THREE.LineSegments(
+        new THREE.BufferGeometry().setFromPoints(bearingPoints),
+        new THREE.LineBasicMaterial({ color: '#406880', transparent: true, opacity: .45 })
+      );
+      group.add(bearings);
       const pointer = new THREE.Mesh(new THREE.ConeGeometry(.14, .55, 4), accentMaterial);
       pointer.position.y = .38;
       pointer.rotation.y = Math.PI / 4;
