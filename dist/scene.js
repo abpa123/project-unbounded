@@ -141,8 +141,8 @@ function groundHeight(x, z) {
 
 try {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#eaf3f8');
-  scene.fog = new THREE.FogExp2('#eaf3f8', .011);
+  scene.background = new THREE.Color('#eaf4fa');
+  scene.fog = new THREE.FogExp2('#eaf4fa', .011);
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -152,7 +152,7 @@ try {
   stage.appendChild(renderer.domElement);
 
   const camera = new THREE.PerspectiveCamera(61, 1, .1, 145);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x90a9b1, 1.45));
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x91abc1, 1.45));
   const sun = new THREE.DirectionalLight(0xffffff, 1.3);
   sun.position.set(-12, 21, 14);
   sun.castShadow = true;
@@ -174,9 +174,9 @@ try {
   groundGeometry.translate(0, 0, -70);
   const groundPosition = groundGeometry.attributes.position;
   const groundColors = [];
-  const groundNear = new THREE.Color('#dce9ec');
-  const groundFar = new THREE.Color('#aec8ca');
-  const riverBank = new THREE.Color('#91aeb7');
+  const groundNear = new THREE.Color('#deebf3');
+  const groundFar = new THREE.Color('#b8d0e0');
+  const riverBank = new THREE.Color('#a0bfd2');
   for (let i = 0; i < groundPosition.count; i++) {
     const x = groundPosition.getX(i), z = groundPosition.getZ(i);
     const h = groundHeight(x, z);
@@ -192,7 +192,7 @@ try {
   ground.receiveShadow = true;
   scene.add(ground);
   const hillGeometry = new THREE.SphereGeometry(1, 32, 18);
-  const hillMaterial = new THREE.MeshStandardMaterial({ color: '#b9d2d9', roughness: 1, metalness: 0 });
+  const hillMaterial = new THREE.MeshStandardMaterial({ color: '#bfd5e2', roughness: 1, metalness: 0 });
   for (const [x, y, z, width, height, depth] of [
     [-25, -5.2, -151, 26, 9.4, 25],
     [25, -5.9, -154, 27, 9.8, 27],
@@ -207,9 +207,9 @@ try {
   // The trail blends into the ground at its shoulders and joins two quieter routes.
   const trailVertices = [], trailIndices = [], trailColors = [];
   const trailOffsets = [-1.25, -1, -.62, 0, .62, 1, 1.25];
-  const trailCenter = new THREE.Color('#eef7f9');
-  const trailShoulder = new THREE.Color('#e4eff2');
-  const trailEdge = new THREE.Color('#dce9ec');
+  const trailCenter = new THREE.Color('#f1f8fc');
+  const trailShoulder = new THREE.Color('#e7f1f8');
+  const trailEdge = new THREE.Color('#deebf3');
   for (let i = 0; i <= 700; i++) {
     const z = 19 - i * 190 / 700;
     const x = pathX(z), w = pathWidth(z);
@@ -244,7 +244,7 @@ try {
         const offset = (j - 2) / 2, px = x + offset * width;
         const edge = Math.abs(offset);
         const y = groundHeight(px, z) + (1 - edge) * .026 + .009;
-        const color = new THREE.Color('#edf7f9').lerp(trailEdge, edge * .82);
+        const color = new THREE.Color('#f0f8fc').lerp(trailEdge, edge * .82);
         vertices.push(px, y, z);
         colors.push(color.r, color.g, color.b);
         if (i && j) {
@@ -264,7 +264,7 @@ try {
   const routeStoneMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: 0 });
   const routeStones = new THREE.InstancedMesh(routeStoneGeometry, routeStoneMaterial, 25);
   const routeDummy = new THREE.Object3D();
-  const routeColors = ['#b8d2d9', '#c5dce1', '#abc9d1'].map(value => new THREE.Color(value));
+  const routeColors = ['#bfd5e2', '#cbdfe9', '#b4cfde'].map(value => new THREE.Color(value));
   for (let i = 0; i < routeStones.count; i++) {
     const z = 1 - i * 1.03;
     const x = sidePathX(z, 1) + .11 * Math.sin(i * 2.2);
@@ -282,8 +282,8 @@ try {
 
   // The river sits below the banks; soft moving lines suggest a slow current.
   const streamVertices = [], streamIndices = [], streamUvs = [], streamColors = [];
-  const waterDeep = new THREE.Color('#70a8ba');
-  const waterEdge = new THREE.Color('#a9cbd3');
+  const waterDeep = new THREE.Color('#6a9dc2');
+  const waterEdge = new THREE.Color('#afd0e4');
   const waterColumns = 9;
   for (let i = 0; i <= 80; i++) {
     const x = -35 + i * 70 / 80;
@@ -316,7 +316,7 @@ try {
   const rippleContext = rippleCanvas.getContext('2d');
   for (let i = 0; i < 48; i++) {
     const x = random() * 512, y = random() * 256, length = 28 + random() * 95;
-    rippleContext.strokeStyle = `rgba(235, 250, 252, ${.24 + random() * .32})`;
+    rippleContext.strokeStyle = `rgba(237, 249, 255, ${.24 + random() * .32})`;
     rippleContext.lineWidth = 1 + random() * 1.6;
     rippleContext.lineCap = 'round';
     rippleContext.beginPath();
@@ -333,7 +333,7 @@ try {
   for (let i = 0; i < ripplePosition.count; i++) ripplePosition.setY(i, ripplePosition.getY(i) + .012);
   rippleGeometry.computeVertexNormals();
   scene.add(new THREE.Mesh(rippleGeometry, new THREE.MeshBasicMaterial({ map: rippleTexture, transparent: true, opacity: .85, depthWrite: false, side: THREE.DoubleSide })));
-  const currentMaterial = new THREE.MeshBasicMaterial({ color: '#d9edf0', transparent: true, opacity: .53, depthWrite: false });
+  const currentMaterial = new THREE.MeshBasicMaterial({ color: '#e1f2fc', transparent: true, opacity: .53, depthWrite: false });
   for (let i = 0; i < 38; i++) {
     const startX = (random() - .5) * 25;
     const length = .45 + random() * 1.1;
@@ -347,7 +347,7 @@ try {
     scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 12, .008, 5, false), currentMaterial));
   }
   const riverStoneGeometry = new THREE.SphereGeometry(1, 14, 10);
-  const riverStoneMaterial = new THREE.MeshStandardMaterial({ color: '#a9c3c9', roughness: 1, metalness: 0 });
+  const riverStoneMaterial = new THREE.MeshStandardMaterial({ color: '#adc7d8', roughness: 1, metalness: 0 });
   for (let i = 0; i < 27; i++) {
     const x = (random() - .5) * 20;
     if (Math.abs(x - pathX(-43)) < 2.1) continue;
@@ -375,8 +375,8 @@ try {
   bridgeGeometry.setAttribute('position', new THREE.Float32BufferAttribute(bridgeVertices, 3));
   bridgeGeometry.setIndex(bridgeIndices);
   bridgeGeometry.computeVertexNormals();
-  scene.add(new THREE.Mesh(bridgeGeometry, new THREE.MeshStandardMaterial({ color: '#b8cbd0', roughness: 1, metalness: 0, side: THREE.DoubleSide })));
-  const abutmentMaterial = new THREE.MeshStandardMaterial({ color: '#a2b9bf', roughness: 1, metalness: 0 });
+  scene.add(new THREE.Mesh(bridgeGeometry, new THREE.MeshStandardMaterial({ color: '#bdcfde', roughness: 1, metalness: 0, side: THREE.DoubleSide })));
+  const abutmentMaterial = new THREE.MeshStandardMaterial({ color: '#a9c0d0', roughness: 1, metalness: 0 });
   for (const z of [bridgeNear, bridgeFar]) {
     for (const side of [-1, 1]) {
       const x = pathX(z) + side * (pathWidth(z) + .2);
@@ -386,8 +386,8 @@ try {
       scene.add(stone);
     }
   }
-  const railMaterial = new THREE.MeshStandardMaterial({ color: '#829fa7', roughness: 1, metalness: 0 });
-  const seamMaterial = new THREE.MeshStandardMaterial({ color: '#9fb8bf', roughness: 1, metalness: 0 });
+  const railMaterial = new THREE.MeshStandardMaterial({ color: '#829fb2', roughness: 1, metalness: 0 });
+  const seamMaterial = new THREE.MeshStandardMaterial({ color: '#a8bdcc', roughness: 1, metalness: 0 });
   for (let i = 1; i < 21; i++) {
     const z = bridgeNear + (bridgeFar - bridgeNear) * i / 21;
     const x = pathX(z), width = pathWidth(z) + .1, y = bridgeHeight(z) + .009;
@@ -423,12 +423,12 @@ try {
   }
   blobGeometry.computeVertexNormals();
   const canopyMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: 0 });
-  const trunkMaterial = new THREE.MeshStandardMaterial({ color: '#78969c', roughness: 1, metalness: 0 });
-  const branchMaterial = new THREE.MeshStandardMaterial({ color: '#7f9ca1', roughness: 1, metalness: 0 });
+  const trunkMaterial = new THREE.MeshStandardMaterial({ color: '#7692a8', roughness: 1, metalness: 0 });
+  const branchMaterial = new THREE.MeshStandardMaterial({ color: '#829daf', roughness: 1, metalness: 0 });
   const rockMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: 0 });
-  const canopyColors = ['#5e8790', '#6f9a9f', '#82aeb0', '#9cc3c4', '#688e97'].map(value => new THREE.Color(value));
-  const shrubColors = ['#7da6a9', '#8eb4b5', '#a3c5c4'].map(value => new THREE.Color(value));
-  const rockColors = ['#a7bec8', '#b5cbd2', '#8faeb8'].map(value => new THREE.Color(value));
+  const canopyColors = ['#5d839f', '#7296b0', '#8baac0', '#aec8d9', '#688da8'].map(value => new THREE.Color(value));
+  const shrubColors = ['#84a6bd', '#96b4c9', '#aec9d8'].map(value => new THREE.Color(value));
+  const rockColors = ['#a9c2d2', '#bcd1df', '#93b2c7'].map(value => new THREE.Color(value));
   const trees = [];
   for (let i = 0; i < (innerWidth < 700 ? 180 : 275); i++) {
     const z = 19 - random() * 137;
@@ -524,8 +524,8 @@ try {
   shadowCanvas.width = shadowCanvas.height = 64;
   const shadowContext = shadowCanvas.getContext('2d');
   const shadowFade = shadowContext.createRadialGradient(32, 32, 3, 32, 32, 32);
-  shadowFade.addColorStop(0, 'rgba(38, 78, 86, .25)');
-  shadowFade.addColorStop(1, 'rgba(38, 78, 86, 0)');
+  shadowFade.addColorStop(0, 'rgba(50, 78, 104, .25)');
+  shadowFade.addColorStop(1, 'rgba(50, 78, 104, 0)');
   shadowContext.fillStyle = shadowFade;
   shadowContext.fillRect(0, 0, 64, 64);
   const shadowGeometry = new THREE.PlaneGeometry(1, 1);
@@ -571,7 +571,7 @@ try {
   grassGeometry.computeVertexNormals();
   const shrubs = new THREE.InstancedMesh(blobGeometry, canopyMaterial, innerWidth < 700 ? 200 : 330);
   const grass = new THREE.InstancedMesh(grassGeometry, new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: 0, side: THREE.DoubleSide }), innerWidth < 700 ? 1400 : 2400);
-  const grassColors = ['#749da0', '#86acac', '#96b9b8', '#a6c7c4'].map(value => new THREE.Color(value));
+  const grassColors = ['#789aae', '#8cabbc', '#9fbac8', '#b1c9d4'].map(value => new THREE.Color(value));
   const rocks = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 14, 10), rockMaterial, innerWidth < 700 ? 110 : 180);
   for (let i = 0; i < shrubs.count; i++) {
     let z = 20 - random() * 138;
@@ -626,7 +626,7 @@ try {
   scene.add(shrubs, grass, rocks);
 
   const trailStones = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), rockMaterial, innerWidth < 700 ? 220 : 360);
-  const trailStoneColors = ['#c3d8df', '#d2e3e9', '#b7d0d8'].map(value => new THREE.Color(value));
+  const trailStoneColors = ['#c9dbe7', '#d8e6ef', '#bed4e1'].map(value => new THREE.Color(value));
   for (let i = 0; i < trailStones.count; i++) {
     let z = 17 - random() * 132;
     if (z < bridgeNear && z > bridgeFar) z -= 8;
@@ -645,7 +645,7 @@ try {
   scene.add(trailStones);
 
   const ferns = new THREE.InstancedMesh(blobGeometry, new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1 }), innerWidth < 700 ? 130 : 220);
-  const fernColors = ['#8cb1b5', '#9ec0c2', '#afcdce'].map(value => new THREE.Color(value));
+  const fernColors = ['#94b2c5', '#a8c4d3', '#bad1dc'].map(value => new THREE.Color(value));
   for (let i = 0; i < ferns.count; i++) {
     let z = 17 - random() * 134;
     if (Math.abs(z + 43) < 4) z -= 8;
