@@ -10,8 +10,9 @@ function updateNavigation() {
   const header = document.querySelector('.site-header');
   header.classList.toggle('is-scrolled', window.scrollY > 45);
   const capabilitiesVisible = document.getElementById('capabilities').getBoundingClientRect().top < innerHeight * .55;
-  header.classList.toggle('on-capabilities', capabilitiesVisible);
-  const active = capabilitiesVisible ? '#capabilities' : document.getElementById('approach').getBoundingClientRect().top < innerHeight * .52 ? '#approach' : '';
+  const practiceVisible = document.getElementById('practice').getBoundingClientRect().top < innerHeight * .55;
+  header.classList.toggle('on-capabilities', practiceVisible);
+  const active = capabilitiesVisible ? '#capabilities' : practiceVisible ? '' : document.getElementById('approach').getBoundingClientRect().top < innerHeight * .52 ? '#approach' : '';
   document.querySelectorAll('.site-header nav a').forEach(link => link.classList.toggle('is-active', link.getAttribute('href') === active));
 }
 addEventListener('scroll', updateNavigation, { passive: true });
@@ -19,10 +20,16 @@ updateNavigation();
 
 if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   gsap.registerPlugin(ScrollTrigger);
+  if (window.Lenis) {
+    const lenis = new Lenis({ lerp: .2, wheelMultiplier: 1.08, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    gsap.ticker.add(time => lenis.raf(time * 1000));
+    gsap.ticker.lagSmoothing(0);
+  }
   gsap.to(motion, {
     progress: 1,
     ease: 'none',
-    scrollTrigger: { trigger: story, start: 'top top', end: 'bottom bottom', scrub: .55 }
+    scrollTrigger: { trigger: story, start: 'top top', end: 'bottom bottom', scrub: .2 }
   });
 
   const hero = document.querySelector('.hero');
@@ -45,7 +52,7 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
     document.querySelectorAll('.story-panel').forEach(panel => {
       gsap.to(panel.querySelector('.story-copy'), {
         opacity: 0, y: -18, ease: 'none',
-        scrollTrigger: { trigger: panel, start: 'bottom 60%', end: 'bottom 20%', scrub: .6 }
+        scrollTrigger: { trigger: panel, start: 'bottom 84%', end: 'bottom 52%', scrub: .25 }
       });
     });
   }
@@ -53,6 +60,14 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   gsap.from('.capabilities-heading > *', {
     opacity: 0, y: 25, duration: .75, stagger: .12, ease: 'power2.out',
     scrollTrigger: { trigger: '.capabilities', start: 'top 72%' }
+  });
+  gsap.from('.practice-intro > *', {
+    opacity: 0, y: 24, duration: .72, stagger: .11, ease: 'power2.out',
+    scrollTrigger: { trigger: '.practice', start: 'top 72%' }
+  });
+  gsap.from('.practice-list > div', {
+    opacity: 0, y: 18, duration: .64, stagger: .1, ease: 'power2.out',
+    scrollTrigger: { trigger: '.practice-list', start: 'top 83%' }
   });
   gsap.from('.service-list > div', {
     opacity: 0, y: 20, duration: .62, stagger: .075, ease: 'power2.out',
@@ -101,7 +116,7 @@ try {
 
   const camera = new THREE.PerspectiveCamera(61, 1, .1, 145);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x90a9b1, 1.45));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.65);
+  const sun = new THREE.DirectionalLight(0xffffff, 1.3);
   sun.position.set(-12, 21, 14);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1536, 1536);
@@ -158,30 +173,27 @@ try {
   trail.receiveShadow = true;
   scene.add(trail);
 
-  const stream = new THREE.Mesh(new THREE.PlaneGeometry(70, 4.8), new THREE.MeshStandardMaterial({ color: '#afcfd6', roughness: 1, metalness: 0, side: THREE.DoubleSide }));
-  stream.rotation.x = -Math.PI / 2;
-  stream.position.set(0, -.15, -43);
-  scene.add(stream);
-  const bridgeMaterial = new THREE.MeshStandardMaterial({ color: '#a8c1c8', roughness: 1, metalness: 0 });
-  for (let z = -40.7; z >= -45.4; z -= .38) {
-    const plank = new THREE.Mesh(new THREE.BoxGeometry(pathWidth(z) * 2 + .42, .09, .31), bridgeMaterial);
-    plank.position.set(pathX(z), .08, z);
-    plank.rotation.y = Math.atan2(pathX(z - .2) - pathX(z + .2), .4);
-    plank.castShadow = true;
-    plank.receiveShadow = true;
-    scene.add(plank);
+  const streamVertices = [], streamIndices = [];
+  for (let i = 0; i <= 80; i++) {
+    const x = -35 + i * 70 / 80;
+    const center = -43 + .45 * Math.sin(x * .23) + .22 * Math.sin(x * .54);
+    const halfWidth = 2.2 + .25 * Math.sin(x * .36);
+    streamVertices.push(x, -.16, center - halfWidth, x, -.16, center + halfWidth);
+    if (i) { const a = (i - 1) * 2, b = i * 2; streamIndices.push(a, b, a + 1, a + 1, b, b + 1); }
   }
-  for (const side of [-1, 1]) {
-    const railPoints = [];
-    for (let z = -40.7; z >= -45.4; z -= .78) {
-      const x = pathX(z) + side * (pathWidth(z) + .3);
-      const post = new THREE.Mesh(new THREE.CylinderGeometry(.045, .055, .82, 8), bridgeMaterial);
-      post.position.set(x, .48, z);
-      scene.add(post);
-      railPoints.push(new THREE.Vector3(x, .88, z));
-    }
-    const rail = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(railPoints), 42, .045, 8, false), bridgeMaterial);
-    scene.add(rail);
+  const streamGeometry = new THREE.BufferGeometry();
+  streamGeometry.setAttribute('position', new THREE.Float32BufferAttribute(streamVertices, 3));
+  streamGeometry.setIndex(streamIndices);
+  streamGeometry.computeVertexNormals();
+  scene.add(new THREE.Mesh(streamGeometry, new THREE.MeshStandardMaterial({ color: '#aacbd4', roughness: 1, metalness: 0, side: THREE.DoubleSide })));
+  const steppingStoneMaterial = new THREE.MeshStandardMaterial({ color: '#c5d9dd', roughness: 1, metalness: 0 });
+  for (let i = 0; i < 9; i++) {
+    const z = -40.7 - i * .56;
+    const stone = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12), steppingStoneMaterial);
+    stone.position.set(pathX(z) + Math.sin(i * 2.3) * .28, .025, z);
+    stone.scale.set(.72 + random() * .18, .13, .32 + random() * .07);
+    stone.rotation.y = .18 * Math.sin(i);
+    scene.add(stone);
   }
 
   // Sculpt one irregular canopy shape, then compose hundreds of distinct trees from it.
@@ -257,6 +269,36 @@ try {
   crowns.instanceColor.needsUpdate = true;
   scene.add(trunks, branches, crowns);
 
+  // Young trees along the trail make the walk feel planted at several scales.
+  const youngCount = innerWidth < 700 ? 42 : 68;
+  const youngTrunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(.055, .09, 1, 10), trunkMaterial, youngCount);
+  const youngCrowns = new THREE.InstancedMesh(blobGeometry, canopyMaterial, youngCount * 2);
+  for (let i = 0; i < youngCount; i++) {
+    const z = 17 - random() * 132;
+    const side = i % 2 ? 1 : -1;
+    const x = pathX(z) + side * (2.45 + random() * 5.3);
+    const y = groundHeight(x, z);
+    const height = .92 + random() * .85;
+    const crownSize = .39 + random() * .2;
+    dummy.position.set(x, y + height * .5, z);
+    dummy.quaternion.identity();
+    dummy.scale.set(1, height, 1);
+    dummy.updateMatrix();
+    youngTrunks.setMatrixAt(i, dummy.matrix);
+    for (let lobe = 0; lobe < 2; lobe++) {
+      dummy.position.set(x + (lobe ? crownSize * .4 : 0), y + height + (lobe ? .1 : .22), z + (lobe ? crownSize * .3 : 0));
+      dummy.quaternion.identity();
+      dummy.scale.set(crownSize * (lobe ? .82 : 1), crownSize * .81, crownSize * (lobe ? .86 : 1));
+      dummy.updateMatrix();
+      youngCrowns.setMatrixAt(i * 2 + lobe, dummy.matrix);
+      youngCrowns.setColorAt(i * 2 + lobe, shrubColors[Math.floor(random() * shrubColors.length)]);
+    }
+  }
+  youngTrunks.instanceMatrix.needsUpdate = true;
+  youngCrowns.instanceMatrix.needsUpdate = true;
+  youngCrowns.instanceColor.needsUpdate = true;
+  scene.add(youngTrunks, youngCrowns);
+
   const shadowCanvas = document.createElement('canvas');
   shadowCanvas.width = shadowCanvas.height = 64;
   const shadowContext = shadowCanvas.getContext('2d');
@@ -280,8 +322,8 @@ try {
 
   // Undergrowth gives the walk its scale without putting objects in the trail.
   const shrubs = new THREE.InstancedMesh(blobGeometry, canopyMaterial, innerWidth < 700 ? 200 : 330);
-  const grass = new THREE.InstancedMesh(new THREE.ConeGeometry(.055, 1, 4), new THREE.MeshStandardMaterial({ color: '#86afb0', roughness: 1 }), innerWidth < 700 ? 250 : 430);
-  const rocks = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), rockMaterial, innerWidth < 700 ? 110 : 180);
+  const grass = new THREE.InstancedMesh(blobGeometry, new THREE.MeshStandardMaterial({ color: '#86afb0', roughness: 1 }), innerWidth < 700 ? 250 : 430);
+  const rocks = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 14, 10), rockMaterial, innerWidth < 700 ? 110 : 180);
   for (let i = 0; i < shrubs.count; i++) {
     const z = 20 - random() * 138, side = random() < .5 ? -1 : 1;
     const x = pathX(z) + side * (2.1 + random() * 15);
@@ -301,7 +343,7 @@ try {
     dummy.position.set(x, groundHeight(x, z) + height * .5, z);
     dummy.quaternion.identity();
     dummy.rotation.set(0, random() * Math.PI * 2, (random() - .5) * .4);
-    dummy.scale.set(.75 + random() * .8, height, .75 + random() * .8);
+    dummy.scale.set(.10 + random() * .09, height * .55, .10 + random() * .09);
     dummy.updateMatrix();
     grass.setMatrixAt(i, dummy.matrix);
   }
@@ -324,7 +366,7 @@ try {
   rocks.instanceColor.needsUpdate = true;
   scene.add(shrubs, grass, rocks);
 
-  const trailStones = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), rockMaterial, innerWidth < 700 ? 220 : 360);
+  const trailStones = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), rockMaterial, innerWidth < 700 ? 220 : 360);
   const trailStoneColors = ['#c3d8df', '#d2e3e9', '#b7d0d8'].map(value => new THREE.Color(value));
   for (let i = 0; i < trailStones.count; i++) {
     const z = 17 - random() * 132;
@@ -342,19 +384,7 @@ try {
   trailStones.instanceColor.needsUpdate = true;
   scene.add(trailStones);
 
-  const fernVertices = [], fernIndices = [];
-  for (let leaf = 0; leaf < 7; leaf++) {
-    const angle = leaf * Math.PI * 2 / 7;
-    const dx = Math.cos(angle), dz = Math.sin(angle);
-    const base = fernVertices.length / 3;
-    fernVertices.push(0, 0, 0, dx * .28 - dz * .085, .24, dz * .28 + dx * .085, dx * .7, .41, dz * .7, dx * .28 + dz * .085, .24, dz * .28 - dx * .085);
-    fernIndices.push(base, base + 1, base + 2, base, base + 2, base + 3);
-  }
-  const fernGeometry = new THREE.BufferGeometry();
-  fernGeometry.setAttribute('position', new THREE.Float32BufferAttribute(fernVertices, 3));
-  fernGeometry.setIndex(fernIndices);
-  fernGeometry.computeVertexNormals();
-  const ferns = new THREE.InstancedMesh(fernGeometry, new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, side: THREE.DoubleSide }), innerWidth < 700 ? 130 : 220);
+  const ferns = new THREE.InstancedMesh(blobGeometry, new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1 }), innerWidth < 700 ? 130 : 220);
   const fernColors = ['#8cb1b5', '#9ec0c2', '#afcdce'].map(value => new THREE.Color(value));
   for (let i = 0; i < ferns.count; i++) {
     const z = 17 - random() * 134, side = random() < .5 ? -1 : 1;
@@ -363,7 +393,7 @@ try {
     dummy.position.set(x, groundHeight(x, z) + .015, z);
     dummy.quaternion.identity();
     dummy.rotation.set(0, random() * Math.PI * 2, 0);
-    dummy.scale.setScalar(size);
+    dummy.scale.set(size * .45, size * .28, size * .65);
     dummy.updateMatrix();
     ferns.setMatrixAt(i, dummy.matrix);
     ferns.setColorAt(i, fernColors[Math.floor(random() * fernColors.length)]);
