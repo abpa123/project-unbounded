@@ -9,7 +9,8 @@ const clamp = THREE.MathUtils.clamp;
 function updateNavigation() {
   const header = document.querySelector('.site-header');
   header.classList.toggle('is-scrolled', window.scrollY > 45);
-  const capabilitiesVisible = document.getElementById('capabilities').getBoundingClientRect().top < innerHeight * .55;
+  const capabilitiesRect = document.getElementById('capabilities').getBoundingClientRect();
+  const capabilitiesVisible = capabilitiesRect.top < innerHeight * .55 && capabilitiesRect.bottom > 80;
   const practiceVisible = document.getElementById('practice').getBoundingClientRect().top < innerHeight * .55;
   header.classList.toggle('on-capabilities', practiceVisible);
   const active = capabilitiesVisible ? '#capabilities' : practiceVisible ? '' : document.getElementById('approach').getBoundingClientRect().top < innerHeight * .52 ? '#approach' : '';
@@ -72,6 +73,26 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   gsap.from('.service-list > div', {
     opacity: 0, y: 20, duration: .62, stagger: .075, ease: 'power2.out',
     scrollTrigger: { trigger: '.service-list', start: 'top 82%' }
+  });
+  gsap.from('.moments-heading > *', {
+    opacity: 0, y: 28, duration: .9, stagger: .13, ease: 'power3.out',
+    scrollTrigger: { trigger: '.moments', start: 'top 75%' }
+  });
+  document.querySelectorAll('.moment').forEach(moment => {
+    gsap.timeline({ scrollTrigger: { trigger: moment, start: 'top 85%', end: 'top 39%', scrub: .45 } })
+      .fromTo(moment.querySelector('.moment-rule'), { scaleX: 0 }, { scaleX: .24, ease: 'none' }, 0)
+      .from(moment.querySelectorAll('.moment-index, h3, p'), { opacity: 0, y: 38, stagger: .14, ease: 'power2.out' }, .08);
+  });
+  gsap.from('.engagement-copy > *', {
+    opacity: 0, y: 30, duration: .85, stagger: .12, ease: 'power3.out',
+    scrollTrigger: { trigger: '.engagement', start: 'top 72%' }
+  });
+  document.querySelectorAll('.engagement-art path').forEach((path, index) => {
+    const length = path.getTotalLength();
+    gsap.fromTo(path, { strokeDasharray: length, strokeDashoffset: length }, {
+      strokeDashoffset: 0, duration: 1.35, delay: index * .17, ease: 'power2.inOut',
+      scrollTrigger: { trigger: '.engagement', start: 'top 70%' }
+    });
   });
 } else {
   const updateProgress = () => {
@@ -319,7 +340,7 @@ try {
   }
 
   // Sculpt one irregular canopy shape, then compose hundreds of distinct trees from it.
-  const blobGeometry = new THREE.SphereGeometry(1, 24, 18);
+  const blobGeometry = new THREE.SphereGeometry(1, 18, 14);
   const blobPosition = blobGeometry.attributes.position;
   for (let i = 0; i < blobPosition.count; i++) {
     const x = blobPosition.getX(i), y = blobPosition.getY(i), z = blobPosition.getZ(i);
@@ -445,8 +466,36 @@ try {
   scene.add(contactShadows);
 
   // Undergrowth gives the walk its scale without putting objects in the trail.
+  const bladeVertices = [], bladeIndices = [];
+  for (let blade = 0; blade < 5; blade++) {
+    const angle = blade * Math.PI * 2 / 5 + .18 * Math.sin(blade * 3);
+    const outwardX = Math.cos(angle), outwardZ = Math.sin(angle);
+    const acrossX = -outwardZ, acrossZ = outwardX;
+    const height = .24 + (blade % 3) * .055;
+    const bend = .055 + (blade % 2) * .035;
+    const width = .015 + (blade % 2) * .004;
+    const base = bladeVertices.length / 3;
+    for (let segment = 0; segment <= 5; segment++) {
+      const t = segment / 5;
+      const centerX = outwardX * (.025 + bend * t * t);
+      const centerZ = outwardZ * (.025 + bend * t * t);
+      const halfWidth = width * (1 - .83 * t);
+      const y = height * t - .012 * t * t;
+      bladeVertices.push(centerX - acrossX * halfWidth, y, centerZ - acrossZ * halfWidth);
+      bladeVertices.push(centerX + acrossX * halfWidth, y, centerZ + acrossZ * halfWidth);
+      if (segment) {
+        const a = base + (segment - 1) * 2, b = base + segment * 2;
+        bladeIndices.push(a, a + 1, b, a + 1, b + 1, b);
+      }
+    }
+  }
+  const grassGeometry = new THREE.BufferGeometry();
+  grassGeometry.setAttribute('position', new THREE.Float32BufferAttribute(bladeVertices, 3));
+  grassGeometry.setIndex(bladeIndices);
+  grassGeometry.computeVertexNormals();
   const shrubs = new THREE.InstancedMesh(blobGeometry, canopyMaterial, innerWidth < 700 ? 200 : 330);
-  const grass = new THREE.InstancedMesh(blobGeometry, new THREE.MeshStandardMaterial({ color: '#86afb0', roughness: 1 }), innerWidth < 700 ? 250 : 430);
+  const grass = new THREE.InstancedMesh(grassGeometry, new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: 0, side: THREE.DoubleSide }), innerWidth < 700 ? 1400 : 2400);
+  const grassColors = ['#749da0', '#86acac', '#96b9b8', '#a6c7c4'].map(value => new THREE.Color(value));
   const rocks = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 14, 10), rockMaterial, innerWidth < 700 ? 110 : 180);
   for (let i = 0; i < shrubs.count; i++) {
     let z = 20 - random() * 138;
@@ -466,14 +515,14 @@ try {
     let z = 20 - random() * 138;
     if (Math.abs(z + 43) < 4) z -= 8;
     const side = random() < .5 ? -1 : 1;
-    const x = pathX(z) + side * (1.8 + random() * 10);
-    const height = .24 + random() * .42;
-    dummy.position.set(x, groundHeight(x, z) + height * .28, z);
+    const x = pathX(z) + side * (1.7 + Math.pow(random(), 1.5) * 16);
+    dummy.position.set(x, groundHeight(x, z) - .018, z);
     dummy.quaternion.identity();
-    dummy.rotation.set(0, random() * Math.PI * 2, (random() - .5) * .4);
-    dummy.scale.set(.10 + random() * .09, height * .55, .10 + random() * .09);
+    dummy.rotation.set(0, random() * Math.PI * 2, (random() - .5) * .1);
+    dummy.scale.setScalar(.7 + random() * .85);
     dummy.updateMatrix();
     grass.setMatrixAt(i, dummy.matrix);
+    grass.setColorAt(i, grassColors[Math.floor(random() * grassColors.length)]);
   }
   for (let i = 0; i < rocks.count; i++) {
     let z = 20 - random() * 138;
@@ -492,6 +541,7 @@ try {
   shrubs.instanceMatrix.needsUpdate = true;
   shrubs.instanceColor.needsUpdate = true;
   grass.instanceMatrix.needsUpdate = true;
+  grass.instanceColor.needsUpdate = true;
   rocks.instanceMatrix.needsUpdate = true;
   rocks.instanceColor.needsUpdate = true;
   scene.add(shrubs, grass, rocks);
