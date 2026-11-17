@@ -2,6 +2,7 @@ import * as THREE from './vendor/three.module.js';
 
 const stage = document.getElementById('scene-canvas');
 const story = document.querySelector('.story');
+const sceneProgress = document.querySelector('.scene-progress');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const motion = { progress: 0 };
 const clamp = THREE.MathUtils.clamp;
@@ -22,7 +23,7 @@ updateNavigation();
 if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   gsap.registerPlugin(ScrollTrigger);
   if (window.Lenis) {
-    const lenis = new Lenis({ lerp: .2, wheelMultiplier: 1.08, anchors: true });
+    const lenis = new Lenis({ lerp: .16, wheelMultiplier: 1.12, anchors: true });
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add(time => lenis.raf(time * 1000));
     gsap.ticker.lagSmoothing(0);
@@ -35,57 +36,58 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
 
   const hero = document.querySelector('.hero');
   gsap.timeline({ defaults: { ease: 'power3.out' } })
-    .from(hero.querySelector('.eyebrow'), { opacity: 0, y: 14, duration: .65 })
-    .from(hero.querySelectorAll('.type-line'), { opacity: 0, y: 38, rotationX: -10, transformOrigin: '50% 100%', stagger: .12, duration: 1.05 }, '-=.3')
-    .from(hero.querySelector('.lede'), { opacity: 0, y: 18, duration: .75 }, '-=.45')
-    .from(hero.querySelector('.explore-button'), { opacity: 0, y: 16, duration: .7 }, '-=.4');
+    .from(hero.querySelector('.eyebrow'), { opacity: 0, x: -16, duration: .75 })
+    .from(hero.querySelectorAll('.type-line'), { opacity: 0, y: 42, rotationX: -8, scaleY: .97, transformOrigin: '50% 100%', stagger: .13, duration: 1.1 }, '-=.4')
+    .from(hero.querySelector('.lede'), { opacity: 0, y: 18, duration: .85 }, '-=.55')
+    .from(hero.querySelector('.explore-button'), { opacity: 0, y: 20, scale: .96, duration: .8 }, '-=.48');
 
   document.querySelectorAll('.story-panel:not(.hero)').forEach(panel => {
     const timeline = gsap.timeline({
-      scrollTrigger: { trigger: panel, start: 'top 80%', end: 'top 28%', scrub: .85 }
+      scrollTrigger: { trigger: panel, start: 'top 86%', end: 'top 27%', scrub: .55 }
     });
     timeline.from(panel.querySelector('.story-rule'), { scaleX: 0, duration: 1 }, 0)
       .from(panel.querySelector('.eyebrow'), { opacity: 0, y: 17, duration: .65 }, .05)
-      .from(panel.querySelectorAll('.type-line'), { opacity: 0, y: 46, rotationX: -9, transformOrigin: '50% 100%', stagger: .11, duration: .85 }, .16)
-      .from(panel.querySelector('.lede'), { opacity: 0, y: 18, duration: .7 }, .48);
+      .from(panel.querySelectorAll('.type-line'), { opacity: 0, y: 38, rotationX: -7, scaleY: .97, transformOrigin: '50% 100%', stagger: .11, duration: .85 }, .16)
+      .from(panel.querySelector('.lede'), { opacity: 0, x: -18, duration: .7 }, .48);
   });
-  if (innerWidth > 700) {
+  if (innerWidth > 850) {
     document.querySelectorAll('.story-panel').forEach(panel => {
       gsap.to(panel.querySelector('.story-copy'), {
-        opacity: 0, y: -18, ease: 'none',
-        scrollTrigger: { trigger: panel, start: 'bottom 84%', end: 'bottom 52%', scrub: .25 }
+        opacity: 0, y: -24, ease: 'none',
+        scrollTrigger: { trigger: panel, start: 'bottom 76%', end: 'bottom 44%', scrub: .25 }
       });
     });
   }
 
-  gsap.from('.capabilities-heading > *', {
-    opacity: 0, y: 25, duration: .75, stagger: .12, ease: 'power2.out',
-    scrollTrigger: { trigger: '.capabilities', start: 'top 72%' }
-  });
-  gsap.from('.practice-intro > *', {
-    opacity: 0, y: 24, duration: .72, stagger: .11, ease: 'power2.out',
-    scrollTrigger: { trigger: '.practice', start: 'top 72%' }
-  });
-  gsap.from('.practice-list > div', {
-    opacity: 0, y: 18, duration: .64, stagger: .1, ease: 'power2.out',
-    scrollTrigger: { trigger: '.practice-list', start: 'top 83%' }
-  });
-  gsap.from('.service-list > div', {
-    opacity: 0, y: 20, duration: .62, stagger: .075, ease: 'power2.out',
-    scrollTrigger: { trigger: '.service-list', start: 'top 82%' }
-  });
-  gsap.from('.moments-heading > *', {
-    opacity: 0, y: 28, duration: .9, stagger: .13, ease: 'power3.out',
-    scrollTrigger: { trigger: '.moments', start: 'top 75%' }
+  for (const selector of ['.practice-intro', '.capabilities-heading', '.moments-heading', '.engagement-copy']) {
+    const heading = document.querySelector(selector);
+    const children = [...heading.children].filter(child => !child.classList.contains('engagement-terms'));
+    gsap.timeline({ scrollTrigger: { trigger: heading, start: 'top 84%' }, defaults: { ease: 'power3.out' } })
+      .from(children[0], { opacity: 0, x: -18, duration: .75 })
+      .from(children[1], { opacity: 0, y: 35, scaleY: .97, transformOrigin: '50% 100%', duration: .95 }, '-=.48')
+      .from(children.slice(2), { opacity: 0, y: 16, duration: .7, stagger: .1 }, '-=.48');
+  }
+  document.querySelectorAll('.practice-list > div, .service-list > div').forEach(row => {
+    const [number, title, detail] = row.children;
+    gsap.timeline({ scrollTrigger: { trigger: row, start: 'top 90%' }, defaults: { ease: 'power3.out' } })
+      .from(number, { opacity: 0, x: -18, duration: .65 })
+      .from(title, { opacity: 0, x: -24, duration: .8 }, '-=.48')
+      .from(detail, { opacity: 0, x: 20, duration: .8 }, '-=.55');
   });
   document.querySelectorAll('.moment').forEach(moment => {
     gsap.timeline({ scrollTrigger: { trigger: moment, start: 'top 85%', end: 'top 39%', scrub: .45 } })
       .fromTo(moment.querySelector('.moment-rule'), { scaleX: 0 }, { scaleX: .24, ease: 'none' }, 0)
-      .from(moment.querySelectorAll('.moment-index, h3, p'), { opacity: 0, y: 38, stagger: .14, ease: 'power2.out' }, .08);
+      .from(moment.querySelector('.moment-index'), { opacity: 0, x: -16, ease: 'power2.out' }, .08)
+      .from(moment.querySelector('h3'), { opacity: 0, y: 35, scaleY: .96, transformOrigin: '50% 100%', ease: 'power3.out' }, .17)
+      .from(moment.querySelector('p'), { opacity: 0, y: 18, ease: 'power2.out' }, .34);
   });
-  gsap.from('.engagement-copy > *', {
-    opacity: 0, y: 30, duration: .85, stagger: .12, ease: 'power3.out',
-    scrollTrigger: { trigger: '.engagement', start: 'top 72%' }
+  gsap.from('.engagement-terms > div', {
+    opacity: 0, y: 22, duration: .85, stagger: .16, ease: 'power3.out',
+    scrollTrigger: { trigger: '.engagement-terms', start: 'top 85%' }
+  });
+  gsap.from('.site-footer > *', {
+    opacity: 0, y: 12, duration: .65, stagger: .1, ease: 'power2.out',
+    scrollTrigger: { trigger: '.site-footer', start: 'top 95%' }
   });
   document.querySelectorAll('.engagement-art path').forEach((path, index) => {
     const length = path.getTotalLength();
@@ -101,6 +103,15 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   };
   addEventListener('scroll', updateProgress, { passive: true });
   updateProgress();
+}
+
+const exploreButton = document.querySelector('.explore-button');
+if (!reducedMotion && matchMedia('(pointer: fine)').matches) {
+  exploreButton.addEventListener('pointermove', event => {
+    const bounds = exploreButton.getBoundingClientRect();
+    exploreButton.style.setProperty('--fill-x', `${((event.clientX - bounds.left) / bounds.width * 100).toFixed(1)}%`);
+  });
+  exploreButton.addEventListener('pointerleave', () => exploreButton.style.removeProperty('--fill-x'));
 }
 
 // All positions are deterministic so the same trail remains recognizable on return visits.
@@ -696,15 +707,22 @@ try {
   resize();
 
   let firstFrame = true;
+  let previousProgress = 0;
+  let walkingEnergy = 0;
   function render() {
+    const progress = reducedMotion ? 0 : clamp(motion.progress, 0, 1);
+    sceneProgress.style.transform = innerWidth <= 850 ? `scaleX(${progress})` : `scaleY(${progress})`;
     if (story.getBoundingClientRect().bottom <= 0) {
       requestAnimationFrame(render);
       return;
     }
-    const progress = reducedMotion ? 0 : clamp(motion.progress, 0, 1);
+    const step = Math.abs(progress - previousProgress);
+    walkingEnergy += (clamp(step * 90, 0, 1) - walkingEnergy) * .14;
+    previousProgress = progress;
     const z = 12 - progress * 92;
     const x = pathX(z);
-    camera.position.set(x, 1.77 + walkHeight(z), z);
+    const stride = reducedMotion ? 0 : Math.sin(progress * 400) * walkingEnergy;
+    camera.position.set(x + stride * .012, 1.77 + walkHeight(z) + stride * .018, z);
     camera.lookAt(pathX(z - 10), 1.66 + walkHeight(z - 10), z - 10);
     sun.position.set(x - 13, 21, z + 8);
     sun.target.position.set(x, 0, z - 10);
