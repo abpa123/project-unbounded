@@ -22,6 +22,7 @@ updateNavigation();
 
 if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   gsap.registerPlugin(ScrollTrigger);
+  document.fonts?.ready.then(() => ScrollTrigger.refresh());
   if (window.Lenis) {
     const lenis = new Lenis({ lerp: .16, wheelMultiplier: 1.12, anchors: true });
     lenis.on('scroll', ScrollTrigger.update);
@@ -50,22 +51,22 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
       .from(panel.querySelectorAll('.type-line'), { opacity: 0, y: 38, rotationX: -7, scaleY: .97, transformOrigin: '50% 100%', stagger: .11, duration: .85 }, .16)
       .from(panel.querySelector('.lede'), { opacity: 0, x: -18, duration: .7 }, .48);
   });
-  if (innerWidth > 850) {
+  gsap.matchMedia().add('(min-width: 851px)', () => {
     document.querySelectorAll('.story-panel').forEach(panel => {
       gsap.to(panel.querySelector('.story-copy'), {
         opacity: 0, y: -24, ease: 'none',
         scrollTrigger: { trigger: panel, start: 'bottom 76%', end: 'bottom 44%', scrub: .25 }
       });
     });
-  }
+  });
 
   for (const selector of ['.practice-intro', '.capabilities-heading', '.moments-heading', '.engagement-copy']) {
     const heading = document.querySelector(selector);
     const children = [...heading.children].filter(child => !child.classList.contains('engagement-terms'));
-    gsap.timeline({ scrollTrigger: { trigger: heading, start: 'top 84%' }, defaults: { ease: 'power3.out' } })
+    const reveal = gsap.timeline({ scrollTrigger: { trigger: heading, start: 'top 84%' }, defaults: { ease: 'power3.out' } })
       .from(children[0], { opacity: 0, x: -18, duration: .75 })
-      .from(children[1], { opacity: 0, y: 35, scaleY: .97, transformOrigin: '50% 100%', duration: .95 }, '-=.48')
-      .from(children.slice(2), { opacity: 0, y: 16, duration: .7, stagger: .1 }, '-=.48');
+      .from(children[1], { opacity: 0, y: 35, scaleY: .97, transformOrigin: '50% 100%', duration: .95 }, '-=.48');
+    if (children.length > 2) reveal.from(children.slice(2), { opacity: 0, y: 16, duration: .7, stagger: .1 }, '-=.48');
   }
   document.querySelectorAll('.practice-list > div, .service-list > div').forEach(row => {
     const [number, title, detail] = row.children;
@@ -89,13 +90,25 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
     opacity: 0, y: 12, duration: .65, stagger: .1, ease: 'power2.out',
     scrollTrigger: { trigger: '.site-footer', start: 'top 95%' }
   });
-  document.querySelectorAll('.engagement-art path').forEach((path, index) => {
-    const length = path.getTotalLength();
-    gsap.fromTo(path, { strokeDasharray: length, strokeDashoffset: length }, {
-      strokeDashoffset: 0, duration: 1.35, delay: index * .17, ease: 'power2.inOut',
-      scrollTrigger: { trigger: '.engagement', start: 'top 70%' }
-    });
+  const illustration = document.querySelector('.engagement-illustration');
+  const illustrationReveal = gsap.timeline({
+    scrollTrigger: { trigger: '.engagement', start: 'top 78%', end: 'top 31%', scrub: .55 }
   });
+  for (const [selector, start, duration] of [
+    ['.illustration-outline', 0, 1],
+    ['.illustration-ear', .14, .5],
+    ['.illustration-mane', .34, .7],
+    ['.illustration-features', .72, .42]
+  ]) {
+    const path = illustration.querySelector(selector);
+    const length = path.getTotalLength();
+    illustrationReveal.fromTo(path,
+      { strokeDasharray: length, strokeDashoffset: length },
+      { strokeDashoffset: 0, duration, ease: 'none' }, start);
+  }
+  illustrationReveal.from(illustration.querySelector('.illustration-horn'), {
+    opacity: 0, scale: .8, transformOrigin: '70% 80%', duration: .42, ease: 'power2.out'
+  }, .38);
 } else {
   const updateProgress = () => {
     const length = Math.max(1, story.offsetHeight - innerHeight);
