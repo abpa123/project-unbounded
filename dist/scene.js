@@ -88,8 +88,17 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
     scrollTrigger: { trigger: '.site-footer', start: 'top 95%' }
   });
   gsap.timeline({ scrollTrigger: { trigger: '.engagement', start: 'top 80%', end: 'top 30%', scrub: .5 } })
-    .from('.engagement-art-frame', { clipPath: 'inset(0 100% 0 0)', ease: 'none', duration: 1 }, 0)
-    .from('.engagement-art-frame img', { opacity: 0, scale: .8, rotation: -8, ease: 'power2.out', duration: .65 }, .28);
+    .from('.engagement-art-frame', { opacity: 0, scale: .9, ease: 'power2.out', duration: .8 }, 0)
+    .from('.engagement-art-frame img', { opacity: 0, scale: .7, rotation: -8, ease: 'power2.out', duration: .65 }, .4);
+  for (const [selector, trigger] of [['.practice-route path', '.practice'], ['.moments-route path', '.moments'], ['.route-symbol-main', '.engagement']]) {
+    const path = document.querySelector(selector);
+    const length = path.getTotalLength();
+    gsap.fromTo(path, { strokeDasharray: length, strokeDashoffset: length }, {
+      strokeDashoffset: 0, ease: 'none',
+      scrollTrigger: { trigger, start: 'top 78%', end: 'top 30%', scrub: .55 }
+    });
+  }
+  gsap.from('.moments-route circle', { opacity: 0, scale: .2, transformOrigin: 'center', stagger: .12, duration: .7, ease: 'back.out(1.6)', scrollTrigger: { trigger: '.moments', start: 'top 55%' } });
 } else {
   const updateProgress = () => {
     const length = Math.max(1, story.offsetHeight - innerHeight);
@@ -136,8 +145,8 @@ function groundHeight(x, z) {
 
 try {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#eaf4fa');
-  scene.fog = new THREE.FogExp2('#eaf4fa', .011);
+  scene.background = new THREE.Color('#e6f4fb');
+  scene.fog = new THREE.FogExp2('#e6f4fb', .011);
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -147,8 +156,8 @@ try {
   stage.appendChild(renderer.domElement);
 
   const camera = new THREE.PerspectiveCamera(61, 1, .1, 145);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x91abc1, 1.45));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.3);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x95b9d0, 1.52));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.18);
   sun.position.set(-12, 21, 14);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1536, 1536);
@@ -169,9 +178,9 @@ try {
   groundGeometry.translate(0, 0, -70);
   const groundPosition = groundGeometry.attributes.position;
   const groundColors = [];
-  const groundNear = new THREE.Color('#deebf3');
-  const groundFar = new THREE.Color('#b8d0e0');
-  const riverBank = new THREE.Color('#a0bfd2');
+  const groundNear = new THREE.Color('#dcecf6');
+  const groundFar = new THREE.Color('#a9cde1');
+  const riverBank = new THREE.Color('#94bdd4');
   for (let i = 0; i < groundPosition.count; i++) {
     const x = groundPosition.getX(i), z = groundPosition.getZ(i);
     const h = groundHeight(x, z);
@@ -202,9 +211,9 @@ try {
   // The trail blends into the ground at its shoulders and joins two quieter routes.
   const trailVertices = [], trailIndices = [], trailColors = [];
   const trailOffsets = [-1.25, -1, -.62, 0, .62, 1, 1.25];
-  const trailCenter = new THREE.Color('#f1f8fc');
-  const trailShoulder = new THREE.Color('#e7f1f8');
-  const trailEdge = new THREE.Color('#deebf3');
+  const trailCenter = new THREE.Color('#f5fbfe');
+  const trailShoulder = new THREE.Color('#e7f3fa');
+  const trailEdge = new THREE.Color('#dcecf6');
   for (let i = 0; i <= 700; i++) {
     const z = 19 - i * 190 / 700;
     const x = pathX(z), w = pathWidth(z);
@@ -418,11 +427,11 @@ try {
   }
   blobGeometry.computeVertexNormals();
   const canopyMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: 0 });
-  const trunkMaterial = new THREE.MeshStandardMaterial({ color: '#7692a8', roughness: 1, metalness: 0 });
-  const branchMaterial = new THREE.MeshStandardMaterial({ color: '#829daf', roughness: 1, metalness: 0 });
+  const trunkMaterial = new THREE.MeshStandardMaterial({ color: '#6c90a8', roughness: 1, metalness: 0 });
+  const branchMaterial = new THREE.MeshStandardMaterial({ color: '#7497ad', roughness: 1, metalness: 0 });
   const rockMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: 0 });
-  const canopyColors = ['#5d839f', '#7296b0', '#8baac0', '#aec8d9', '#688da8'].map(value => new THREE.Color(value));
-  const shrubColors = ['#84a6bd', '#96b4c9', '#aec9d8'].map(value => new THREE.Color(value));
+  const canopyColors = ['#4f83a7', '#6494b5', '#7facbe', '#aacbdd', '#5d8eaf'].map(value => new THREE.Color(value));
+  const shrubColors = ['#79a8c2', '#91b8ce', '#a7c9da'].map(value => new THREE.Color(value));
   const rockColors = ['#a9c2d2', '#bcd1df', '#93b2c7'].map(value => new THREE.Color(value));
   const trees = [];
   for (let i = 0; i < (innerWidth < 700 ? 180 : 275); i++) {
@@ -482,6 +491,32 @@ try {
   crowns.instanceMatrix.needsUpdate = true;
   crowns.instanceColor.needsUpdate = true;
   scene.add(trunks, branches, crowns);
+
+  // Three grounded pairs of trees lean into the trail, giving the walk a changing canopy.
+  for (const [index, z] of [-18, -66, -103].entries()) {
+    for (const side of [-1, 1]) {
+      const baseX = pathX(z) + side * (3.25 + index * .15);
+      const baseY = groundHeight(baseX, z);
+      const tipX = pathX(z) + side * (1.25 + index * .08);
+      const tipY = trailHeight(z) + 4.7 + index * .16;
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(baseX, baseY, z),
+        new THREE.Vector3(baseX - side * .12, baseY + 1.8, z - .12),
+        new THREE.Vector3(tipX + side * .55, tipY - .55, z - .5),
+        new THREE.Vector3(tipX, tipY, z - .75)
+      ]);
+      const trunk = new THREE.Mesh(new THREE.TubeGeometry(curve, 20, .16, 8, false), trunkMaterial);
+      trunk.castShadow = true;
+      scene.add(trunk);
+      for (let lobe = 0; lobe < 3; lobe++) {
+        const crown = new THREE.Mesh(blobGeometry, new THREE.MeshStandardMaterial({ color: canopyColors[(index * 2 + lobe + (side > 0 ? 1 : 0)) % canopyColors.length], roughness: 1 }));
+        crown.position.set(tipX + side * (lobe - 1) * .46, tipY + (lobe === 0 ? .48 : .07), z - .75 + (lobe - 1) * .34);
+        crown.scale.set(lobe === 0 ? 1.18 : .88, lobe === 0 ? .92 : .7, lobe === 0 ? 1.07 : .87);
+        crown.castShadow = true;
+        scene.add(crown);
+      }
+    }
+  }
 
   // Young trees along the trail make the walk feel planted at several scales.
   const youngCount = innerWidth < 700 ? 42 : 68;
