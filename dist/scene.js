@@ -24,10 +24,12 @@ function updateNavigation() {
   header.classList.toggle('is-scrolled', window.scrollY > 90);
   const capabilitiesRect = document.getElementById('capabilities').getBoundingClientRect();
   const capabilitiesVisible = capabilitiesRect.top < innerHeight * .55 && capabilitiesRect.bottom > 80;
+  const methodRect = document.getElementById('method').getBoundingClientRect();
+  const methodVisible = methodRect.top < innerHeight * .55 && methodRect.bottom > 80;
   const practiceRect = document.getElementById('practice').getBoundingClientRect();
   const practiceVisible = practiceRect.top < innerHeight * .55 && practiceRect.bottom > 80;
   header.classList.toggle('on-capabilities', practiceRect.top < innerHeight * .55);
-  const active = capabilitiesVisible ? '#capabilities' : practiceVisible ? '#practice' : document.getElementById('approach').getBoundingClientRect().top < innerHeight * .52 ? '#approach' : '';
+  const active = capabilitiesVisible || methodVisible ? '#capabilities' : practiceVisible ? '#practice' : document.getElementById('approach').getBoundingClientRect().top < innerHeight * .52 ? '#approach' : '';
   navLinks.forEach(link => link.classList.toggle('is-active', link.getAttribute('href') === active));
   positionNavIndicator(hoveredNavLink || navLinks.find(link => link.classList.contains('is-active')));
 }
@@ -96,7 +98,7 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
     });
   });
 
-  for (const selector of ['.practice-intro', '.capabilities-heading', '.moments-heading', '.engagement-copy']) {
+  for (const selector of ['.practice-intro', '.capabilities-heading', '.method-heading', '.moments-heading', '.engagement-copy']) {
     const heading = document.querySelector(selector);
     const children = [...heading.children].filter(child => !child.classList.contains('engagement-terms'));
     const reveal = gsap.timeline({ scrollTrigger: { trigger: heading, start: 'top 84%' }, defaults: { ease: 'power3.out' } })
@@ -104,7 +106,7 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
       .from(children[1], { opacity: 0, y: 30, scaleY: .98, transformOrigin: '50% 100%', duration: .85 }, '-=.4');
     if (children.length > 2) reveal.from(children.slice(2), { opacity: 0, y: 13, duration: .65, stagger: .08 }, '-=.65');
   }
-  document.querySelectorAll('.practice-list > div, .service-list > div').forEach(row => {
+  document.querySelectorAll('.practice-list > div, .service-list > div, .method-steps > article').forEach(row => {
     const [number, title, detail] = row.children;
     gsap.timeline({ scrollTrigger: { trigger: row, start: 'top 90%' }, defaults: { ease: 'power3.out' } })
       .from(row, { opacity: 0, y: 25, scale: .98, duration: .85 })
