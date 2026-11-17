@@ -4,13 +4,28 @@ const stage = document.getElementById('scene-canvas');
 const story = document.querySelector('.story');
 const progressFill = document.getElementById('route-indicator-fill');
 const progressTip = document.getElementById('route-indicator-tip');
+const mapNumber = document.getElementById('map-number');
+const mapTitle = document.getElementById('map-title');
+const mapDescription = document.getElementById('map-description');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const motion = { progress: 0 };
+const routeStops = [
+  ['01 / 04', 'Set the course', 'Beyond the pilot'],
+  ['02 / 04', 'Map the work', 'Find the friction'],
+  ['03 / 04', 'Connect the parts', 'People, tools, information'],
+  ['04 / 04', 'Keep moving', 'Deploy, train, improve']
+];
+let currentStop = -1;
 
 function setProgress(value) {
   motion.progress = THREE.MathUtils.clamp(value, 0, 1);
   progressFill.style.height = `${motion.progress * 100}%`;
   progressTip.style.top = `${motion.progress * 100}%`;
+  const stop = motion.progress < .22 ? 0 : motion.progress < .54 ? 1 : motion.progress < .82 ? 2 : 3;
+  if (stop !== currentStop) {
+    currentStop = stop;
+    [mapNumber.textContent, mapTitle.textContent, mapDescription.textContent] = routeStops[stop];
+  }
 }
 
 if (!reducedMotion && window.gsap && window.ScrollTrigger) {
@@ -24,8 +39,9 @@ if (!reducedMotion && window.gsap && window.ScrollTrigger) {
   document.querySelectorAll('.story-panel').forEach((panel, index) => {
     const lines = panel.querySelectorAll('.mask > span');
     gsap.from(lines, {
-      yPercent: 110,
-      duration: 1.05,
+      y: 24,
+      autoAlpha: 0,
+      duration: .95,
       ease: 'power3.out',
       stagger: 0.09,
       scrollTrigger: { trigger: panel, start: index ? 'top 67%' : 'top 98%', toggleActions: 'play none none reverse' }
@@ -72,15 +88,15 @@ try {
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.45;
+  renderer.toneMappingExposure = 1.08;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   stage.appendChild(renderer.domElement);
 
   const camera = new THREE.OrthographicCamera(-10, 10, 10, -10, .1, 100);
-  const ambient = new THREE.HemisphereLight(0xffffff, 0xc6d2cf, 2.25);
+  const ambient = new THREE.HemisphereLight(0xffffff, 0xc6d2cf, 1.65);
   scene.add(ambient);
-  const sun = new THREE.DirectionalLight(0xffffff, 3.2);
+  const sun = new THREE.DirectionalLight(0xffffff, 2.35);
   sun.position.set(-7, 15, 9);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -110,9 +126,9 @@ try {
   terrainGeometry.rotateX(-Math.PI / 2);
   const position = terrainGeometry.attributes.position;
   const colors = [];
-  const low = new THREE.Color('#e9eeeb');
-  const mid = new THREE.Color('#cbdcd7');
-  const high = new THREE.Color('#abc9c4');
+  const low = new THREE.Color('#e1eae6');
+  const mid = new THREE.Color('#bad0c8');
+  const high = new THREE.Color('#8eaFA7');
   for (let i = 0; i < position.count; i++) {
     const x = position.getX(i), z = position.getZ(i), y = heightAt(x, z);
     position.setY(i, y);
@@ -148,7 +164,7 @@ try {
   }
   const contourGeometry = new THREE.BufferGeometry();
   contourGeometry.setAttribute('position', new THREE.Float32BufferAttribute(contourVertices, 3));
-  const contours = new THREE.LineSegments(contourGeometry, new THREE.LineBasicMaterial({ color: '#64858e', transparent: true, opacity: .42, depthWrite: false }));
+  const contours = new THREE.LineSegments(contourGeometry, new THREE.LineBasicMaterial({ color: '#4f7479', transparent: true, opacity: .56, depthWrite: false }));
   scene.add(contours);
 
   const controls = [[-5.4, 5.9], [-4.3, 3.9], [-2.4, 2.5], [-1.1, .5], [.5, -1.3], [2.3, -2.7], [1.2, -4.4], [3.6, -6.2]];
@@ -160,36 +176,113 @@ try {
     }
   }
   const routeCurve = new SurfaceCurve();
-  const routeBase = new THREE.Mesh(new THREE.TubeGeometry(routeCurve, 500, .057, 10, false), new THREE.MeshStandardMaterial({ color: '#a2b4d4', roughness: .45, transparent: true, opacity: .7 }));
+  const routeBase = new THREE.Mesh(new THREE.TubeGeometry(routeCurve, 500, .073, 10, false), new THREE.MeshStandardMaterial({ color: '#8196bb', roughness: .45, transparent: true, opacity: .65 }));
   scene.add(routeBase);
-  const activeGeometry = new THREE.TubeGeometry(routeCurve, 500, .068, 10, false);
+  const activeGeometry = new THREE.TubeGeometry(routeCurve, 500, .087, 10, false);
   const route = new THREE.Mesh(activeGeometry, new THREE.MeshStandardMaterial({ color: '#214bd4', roughness: .3, metalness: .13, emissive: '#092388', emissiveIntensity: .12 }));
   route.castShadow = true;
   scene.add(route);
   const totalRouteIndices = activeGeometry.index.count;
 
-  const pinMaterial = new THREE.MeshStandardMaterial({ color: '#173d70', roughness: .35, metalness: .25 });
-  const pinCore = new THREE.MeshStandardMaterial({ color: '#2454e1', roughness: .25, metalness: .2 });
-  for (const t of [.22, .51, .81]) {
-    const p = routeCurve.getPoint(t);
-    const group = new THREE.Group();
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(.19, .018, 8, 40), pinMaterial);
+  const inkMaterial = new THREE.MeshStandardMaterial({ color: '#173b53', roughness: .38, metalness: .16 });
+  const accentMaterial = new THREE.MeshStandardMaterial({ color: '#2454db', roughness: .28, metalness: .22, emissive: '#14318c', emissiveIntensity: .08 });
+  const paleMaterial = new THREE.MeshStandardMaterial({ color: '#f6f8f4', roughness: .78, metalness: 0 });
+  const lineMaterial = new THREE.MeshStandardMaterial({ color: '#426c88', roughness: .52 });
+  const stationGroups = [];
+  const addRing = (group, radius, material, y = .04, thickness = .025) => {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, thickness, 8, 64), material);
     ring.rotation.x = -Math.PI / 2;
+    ring.position.y = y;
     group.add(ring);
-    const stem = new THREE.Mesh(new THREE.CylinderGeometry(.022, .022, .48, 10), pinMaterial);
-    stem.position.y = .24;
-    stem.castShadow = true;
-    group.add(stem);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(.09, 18, 12), pinCore);
-    head.position.y = .51;
-    head.castShadow = true;
-    group.add(head);
-    group.position.set(p.x, heightAt(p.x, p.z) + .09, p.z);
+    return ring;
+  };
+  const addPath = (group, points, material = lineMaterial, radius = .025) => {
+    const curve = new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z)));
+    const path = new THREE.Mesh(new THREE.TubeGeometry(curve, 32, radius, 8, false), material);
+    path.castShadow = true;
+    group.add(path);
+  };
+  const addBlock = (group, x, z, width, height, material) => {
+    const block = new THREE.Mesh(new THREE.BoxGeometry(width, height, width), material);
+    block.position.set(x, height / 2, z);
+    block.castShadow = true;
+    block.receiveShadow = true;
+    group.add(block);
+    return block;
+  };
+
+  [.12, .38, .66, .9].forEach((t, index) => {
+    const point = routeCurve.getPoint(t);
+    const group = new THREE.Group();
+    group.position.copy(point);
+    const platform = new THREE.Mesh(new THREE.CylinderGeometry(.32, .38, .08, 48), paleMaterial);
+    platform.position.y = -.035;
+    platform.castShadow = true;
+    platform.receiveShadow = true;
+    group.add(platform);
+    const halo = addRing(group, .46, inkMaterial, .035, .025);
+    addRing(group, .29, accentMaterial, .075, .023);
+
+    if (index === 0) {
+      // Survey: a compass and a rotating scan above the ground.
+      addRing(group, .86, lineMaterial, .025, .018);
+      addRing(group, 1.18, lineMaterial, .02, .013);
+      for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 2) {
+        const x = Math.cos(angle), z = Math.sin(angle);
+        addPath(group, [[x * .56, .055, z * .56], [x * .72, .055, z * .72]], inkMaterial, .024);
+      }
+      const pointer = new THREE.Mesh(new THREE.ConeGeometry(.14, .55, 4), accentMaterial);
+      pointer.position.y = .38;
+      pointer.rotation.y = Math.PI / 4;
+      pointer.castShadow = true;
+      group.add(pointer);
+    } else if (index === 1) {
+      // Survey: the scattered inputs become visible around the route.
+      const inputs = [[-1.22, .92], [1.14, 1.04], [.72, -1.24]];
+      inputs.forEach(([x, z], n) => {
+        addPath(group, [[x, .14, z], [x * .58, .2, z * .58], [0, .16, 0]], lineMaterial, .027);
+        const node = new THREE.Mesh(new THREE.CylinderGeometry(.11, .15, .24 + n * .08, 18), paleMaterial);
+        node.position.set(x, .16 + n * .04, z);
+        node.castShadow = true;
+        group.add(node);
+        addRing(group, .23, inkMaterial, .05, .015).position.set(x, .05, z);
+      });
+      const hub = new THREE.Mesh(new THREE.SphereGeometry(.18, 24, 16), accentMaterial);
+      hub.position.y = .36;
+      hub.castShadow = true;
+      group.add(hub);
+    } else if (index === 2) {
+      // Connect: linked modules rise into an operating workflow.
+      const modules = [[-.98, -.25, .48], [-.32, .26, .82], [.4, -.1, .62], [1.02, .32, .98]];
+      modules.forEach(([x, z, h], n) => {
+        addBlock(group, x, z, .44, h, n === 3 ? accentMaterial : paleMaterial);
+        if (n) {
+          const [px, pz, ph] = modules[n - 1];
+          addPath(group, [[px, ph + .05, pz], [(px + x) / 2, Math.max(ph, h) + .16, (pz + z) / 2], [x, h + .05, z]], inkMaterial, .031);
+        }
+      });
+      addRing(group, 1.42, lineMaterial, .025, .015);
+    } else {
+      // Improve: widening rings keep traveling past the last stop.
+      [ .78, 1.22, 1.68 ].forEach((radius, n) => addRing(group, radius, n === 2 ? lineMaterial : inkMaterial, .035 - n * .006, .018));
+      const mast = new THREE.Mesh(new THREE.CylinderGeometry(.035, .08, .9, 16), accentMaterial);
+      mast.position.y = .45;
+      mast.castShadow = true;
+      group.add(mast);
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(.14, 24, 16), accentMaterial);
+      cap.position.y = .94;
+      group.add(cap);
+    }
     scene.add(group);
-  }
-  const traveler = new THREE.Mesh(new THREE.SphereGeometry(.14, 24, 16), new THREE.MeshStandardMaterial({ color: '#1c4bdf', roughness: .19, metalness: .22, emissive: '#1435a0', emissiveIntensity: .2 }));
+    stationGroups.push({ group, baseY: group.position.y, halo, threshold: [0, .32, .64, .91][index] });
+  });
+
+  const traveler = new THREE.Mesh(new THREE.SphereGeometry(.16, 24, 16), new THREE.MeshStandardMaterial({ color: '#1c4bdf', roughness: .17, metalness: .28, emissive: '#1435a0', emissiveIntensity: .22 }));
   traveler.castShadow = true;
   scene.add(traveler);
+  const travelerRing = new THREE.Mesh(new THREE.TorusGeometry(.34, .023, 8, 48), new THREE.MeshBasicMaterial({ color: '#2454db', transparent: true, opacity: .72 }));
+  travelerRing.rotation.x = -Math.PI / 2;
+  scene.add(travelerRing);
 
   const cameraStates = [
     { at: 0, pos: [13.5, 16, 18], look: [-2.1, .2, 0], zoom: .86 },
@@ -235,6 +328,15 @@ try {
     const marker = routeCurve.getPoint(drawn);
     traveler.position.copy(marker);
     traveler.position.y += .09 + (reducedMotion ? 0 : Math.sin(time * .0022) * .025);
+    travelerRing.position.copy(marker);
+    travelerRing.position.y -= .035;
+    travelerRing.scale.setScalar(reducedMotion ? 1 : 1 + Math.sin(time * .003) * .09);
+    stationGroups.forEach(({ group, baseY, halo, threshold }, index) => {
+      const reveal = index === 0 ? 1 : THREE.MathUtils.smoothstep(p, threshold - .14, threshold + .05);
+      group.scale.setScalar(.53 + reveal * .47);
+      group.position.y = baseY - (1 - reveal) * .18;
+      if (index === 0 && !reducedMotion) halo.rotation.z = time * .00025;
+    });
     renderer.render(scene, camera);
     if (firstFrame) { document.body.classList.add('webgl-ready'); firstFrame = false; }
     requestAnimationFrame(render);
