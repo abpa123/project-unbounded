@@ -37,8 +37,7 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
 
   const hero = document.querySelector('.hero');
   gsap.timeline({ defaults: { ease: 'power3.out' } })
-    .from(hero.querySelector('.story-rule'), { scaleX: 0, duration: 1.05 })
-    .from(hero.querySelectorAll('.type-line'), { opacity: 0, y: 42, rotationX: -8, scaleY: .97, transformOrigin: '50% 100%', stagger: .13, duration: 1.1 }, '-=.4')
+    .from(hero.querySelectorAll('.type-line'), { opacity: 0, y: 42, rotationX: -8, scaleY: .97, transformOrigin: '50% 100%', stagger: .13, duration: 1.1 })
     .from(hero.querySelector('.lede'), { opacity: 0, y: 18, duration: .85 }, '-=.55')
     .from(hero.querySelector('.explore-button'), { opacity: 0, y: 20, scale: .96, duration: .8 }, '-=.48');
 
@@ -46,8 +45,7 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
     const timeline = gsap.timeline({
       scrollTrigger: { trigger: panel, start: 'top 86%', end: 'top 27%', scrub: .55 }
     });
-    timeline.from(panel.querySelector('.story-rule'), { scaleX: 0, duration: 1 }, 0)
-      .from(panel.querySelector('.eyebrow'), { opacity: 0, y: 17, duration: .65 }, .05)
+    timeline.from(panel.querySelector('.eyebrow'), { opacity: 0, y: 17, duration: .65 }, 0)
       .from(panel.querySelectorAll('.type-line'), { opacity: 0, y: 38, rotationX: -7, scaleY: .97, transformOrigin: '50% 100%', stagger: .11, duration: .85 }, .16)
       .from(panel.querySelector('.lede'), { opacity: 0, x: -18, duration: .7 }, .48);
   });
@@ -77,10 +75,9 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   });
   document.querySelectorAll('.moment').forEach(moment => {
     gsap.timeline({ scrollTrigger: { trigger: moment, start: 'top 85%', end: 'top 39%', scrub: .45 } })
-      .fromTo(moment.querySelector('.moment-rule'), { scaleX: 0 }, { scaleX: .24, ease: 'none' }, 0)
-      .from(moment.querySelector('.moment-index'), { opacity: 0, x: -16, ease: 'power2.out' }, .08)
-      .from(moment.querySelector('h3'), { opacity: 0, y: 35, scaleY: .96, transformOrigin: '50% 100%', ease: 'power3.out' }, .17)
-      .from(moment.querySelector('p'), { opacity: 0, y: 18, ease: 'power2.out' }, .34);
+      .from(moment.querySelector('.moment-index'), { opacity: 0, x: -16, ease: 'power2.out' }, 0)
+      .from(moment.querySelector('h3'), { opacity: 0, y: 35, scaleY: .96, transformOrigin: '50% 100%', ease: 'power3.out' }, .12)
+      .from(moment.querySelector('p'), { opacity: 0, y: 18, ease: 'power2.out' }, .3);
   });
   gsap.from('.engagement-terms > div', {
     opacity: 0, y: 22, duration: .85, stagger: .16, ease: 'power3.out',
