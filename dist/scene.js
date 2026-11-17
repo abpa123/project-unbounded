@@ -5,6 +5,13 @@ const story = document.querySelector('.story');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const motion = { progress: 0 };
 const clamp = THREE.MathUtils.clamp;
+// Each story panel is a stop on the trail; the camera walks to the stop's progress value.
+const panels = [...document.querySelectorAll('.story-panel')];
+const stops = [0, .2, .6, 1];
+const CHEST_STOP = 1;
+const chestState = { reveal: 0, hover: 0, lid: 0, burst: 0, opened: false };
+let lenis = null;
+let activeStop = -1;
 
 function updateNavigation() {
   const header = document.querySelector('.site-header');
@@ -24,16 +31,11 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   gsap.registerPlugin(ScrollTrigger);
   document.fonts?.ready.then(() => ScrollTrigger.refresh());
   if (window.Lenis) {
-    const lenis = new Lenis({ lerp: .16, wheelMultiplier: 1.12, anchors: true });
+    lenis = new Lenis({ lerp: .085, wheelMultiplier: 1, anchors: true });
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add(time => lenis.raf(time * 1000));
     gsap.ticker.lagSmoothing(0);
   }
-  gsap.to(motion, {
-    progress: 1,
-    ease: 'none',
-    scrollTrigger: { trigger: story, start: 'top top', end: 'bottom bottom', scrub: .2 }
-  });
 
   const hero = document.querySelector('.hero');
   gsap.timeline({ defaults: { ease: 'power3.out' } })
@@ -41,16 +43,17 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
     .from(hero.querySelector('.lede'), { opacity: 0, y: 18, duration: .85 }, '-=.55')
     .from(hero.querySelector('.explore-button'), { opacity: 0, y: 20, scale: .96, duration: .8 }, '-=.48');
 
+  // The original scroll-scrubbed reveal: each card rises in as its panel enters and drifts out as it leaves.
   document.querySelectorAll('.story-panel:not(.hero)').forEach(panel => {
-    const timeline = gsap.timeline({
-      scrollTrigger: { trigger: panel, start: 'top 86%', end: 'top 27%', scrub: .55 }
-    });
-    timeline.from(panel.querySelector('.eyebrow'), { opacity: 0, y: 17, duration: .65 }, 0)
-      .from(panel.querySelectorAll('.type-line'), { opacity: 0, y: 38, rotationX: -7, scaleY: .97, transformOrigin: '50% 100%', stagger: .11, duration: .85 }, .16)
-      .from(panel.querySelector('.lede'), { opacity: 0, x: -18, duration: .7 }, .48);
+    const copy = panel.querySelector('.story-copy');
+    gsap.timeline({ scrollTrigger: { trigger: panel, start: 'top 86%', end: 'top 27%', scrub: .55 } })
+      .fromTo(copy, { clipPath: 'inset(100% 0% 0% 0% round 10px)', scale: .96 }, { clipPath: 'inset(0% 0% 0% 0% round 10px)', scale: 1, duration: .7, ease: 'power2.out' }, 0)
+      .from(copy.querySelector('.eyebrow'), { opacity: 0, y: 17, duration: .65 }, .1)
+      .from(copy.querySelectorAll('.type-line'), { opacity: 0, y: 38, rotationX: -7, scaleY: .97, transformOrigin: '50% 100%', stagger: .11, duration: .85 }, .22)
+      .from(copy.querySelectorAll('.lede, .stop-cue'), { opacity: 0, x: -18, stagger: .1, duration: .7 }, .5);
   });
   gsap.matchMedia().add('(min-width: 851px)', () => {
-    document.querySelectorAll('.story-panel').forEach(panel => {
+    panels.forEach(panel => {
       gsap.to(panel.querySelector('.story-copy'), {
         opacity: 0, y: -24, ease: 'none',
         scrollTrigger: { trigger: panel, start: 'bottom 76%', end: 'bottom 44%', scrub: .25 }
@@ -99,14 +102,61 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
     });
   }
   gsap.from('.moments-route circle', { opacity: 0, scale: .2, transformOrigin: 'center', stagger: .12, duration: .7, ease: 'back.out(1.6)', scrollTrigger: { trigger: '.moments', start: 'top 55%' } });
-} else {
-  const updateProgress = () => {
-    const length = Math.max(1, story.offsetHeight - innerHeight);
-    motion.progress = clamp(scrollY / length, 0, 1);
-  };
-  addEventListener('scroll', updateProgress, { passive: true });
-  updateProgress();
 }
+
+// The camera follows the scroll, as before: between two panels it walks between their stops,
+// so each panel's text lines up with its spot on the trail.
+const animate = window.gsap && !reducedMotion;
+function arriveAt(index) {
+  if (index !== CHEST_STOP || chestState.reveal > 0) return;
+  if (animate) {
+    gsap.to(chestState, { reveal: 1, duration: 1.25, ease: 'back.out(1.5)' });
+    gsap.fromTo(chestState, { burst: 1 }, { burst: 0, duration: 1.6, ease: 'power2.out' });
+  } else chestState.reveal = 1;
+}
+const snapPoints = () => panels.map(panel => story.offsetTop + panel.offsetTop);
+function updateProgress() {
+  const points = snapPoints();
+  const position = scrollY;
+  let progress = 1;
+  for (let i = 0; i < points.length - 1; i++) {
+    if (position < points[i + 1]) {
+      const t = clamp((position - points[i]) / (points[i + 1] - points[i]), 0, 1);
+      progress = stops[i] + (stops[i + 1] - stops[i]) * t;
+      break;
+    }
+  }
+  motion.progress = progress;
+  // The nearest panel is the active one; the chest rises once you are close to its stop.
+  let nearest = 0;
+  points.forEach((point, i) => { if (Math.abs(point - position) < Math.abs(points[nearest] - position)) nearest = i; });
+  activeStop = nearest;
+  if (Math.abs(progress - stops[CHEST_STOP]) < .035) arriveAt(CHEST_STOP);
+}
+
+// Magnetic stops: once scrolling comes to rest inside the story, the page glides to the
+// nearest panel so it never stops between two texts. Any new scroll takes over at once.
+let settleTimer = 0;
+function settleOnNearest() {
+  clearTimeout(settleTimer);
+  settleTimer = setTimeout(() => {
+    if (document.body.classList.contains('treasure-open')) return;
+    if (lenis && (lenis.isScrolling || Math.abs(lenis.targetScroll - lenis.animatedScroll) > 1)) { settleOnNearest(); return; }
+    const points = snapPoints();
+    const position = scrollY;
+    const last = points[points.length - 1];
+    // Past the last panel, let the page scroll on into the rest of the site.
+    if (position > last + innerHeight * .2) return;
+    const target = points.reduce((best, point) => Math.abs(point - position) < Math.abs(best - position) ? point : best, points[0]);
+    const distance = Math.abs(target - position);
+    if (distance < 2) return;
+    if (lenis) lenis.scrollTo(target, { duration: clamp(.9 + distance / 700, .9, 1.8), easing: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 });
+    else scrollTo({ top: target, behavior: reducedMotion ? 'auto' : 'smooth' });
+  }, 220);
+}
+addEventListener('scroll', () => { updateProgress(); settleOnNearest(); }, { passive: true });
+addEventListener('resize', updateProgress);
+updateProgress();
 
 // All positions are deterministic so the same trail remains recognizable on return visits.
 function randomGenerator(seed) {
@@ -717,6 +767,155 @@ try {
   fallenLogs.instanceMatrix.needsUpdate = true;
   scene.add(fallenLogs);
 
+  // The first stop's find: a treasure chest that rises out of the trail ahead, glowing gold.
+  const chestStopZ = 12 - stops[CHEST_STOP] * 92;
+  const chestZ = chestStopZ - 4.4;
+  const chestX = pathX(chestZ) + .15;
+  const chestY = trailHeight(chestZ) + .02;
+  const chest = new THREE.Group();
+  chest.position.set(chestX, chestY, chestZ);
+  chest.rotation.y = Math.atan2(pathX(chestStopZ) - chestX, chestStopZ - chestZ);
+  chest.scale.setScalar(.0001);
+  scene.add(chest);
+  const chestBody = new THREE.Group();
+  chest.add(chestBody);
+  const woodMaterial = new THREE.MeshStandardMaterial({ color: '#2e5b80', roughness: .72, metalness: .05 });
+  const woodDarkMaterial = new THREE.MeshStandardMaterial({ color: '#21476a', roughness: .8, metalness: .05 });
+  const goldMaterial = new THREE.MeshStandardMaterial({ color: '#f0c25a', emissive: '#d99a2b', emissiveIntensity: .55, roughness: .32, metalness: .65 });
+  const treasureMaterial = new THREE.MeshBasicMaterial({ color: '#ffe3a1', toneMapped: false });
+  const W = .92, D = .6, H = .46, R = D / 2;
+  const box = (w, h, d, material, x, y, z) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+    mesh.position.set(x, y, z);
+    return mesh;
+  };
+  chestBody.add(box(W, H, D, woodMaterial, 0, H / 2, 0));
+  chestBody.add(box(W + .03, .06, D + .03, woodDarkMaterial, 0, .03, 0));
+  for (const x of [-W / 2 + .1, W / 2 - .1]) chestBody.add(box(.07, H + .01, D + .025, goldMaterial, x, H / 2, 0));
+  chestBody.add(box(W + .02, .05, D + .02, goldMaterial, 0, H - .03, 0));
+  chestBody.add(box(.14, .17, .05, goldMaterial, 0, H - .09, D / 2 + .02));
+  chestBody.add(box(W - .08, .02, D - .08, treasureMaterial, 0, H - .015, 0));
+  const lidPivot = new THREE.Group();
+  lidPivot.position.set(0, H, -D / 2);
+  chest.add(lidPivot);
+  const lidGeometry = new THREE.CylinderGeometry(R, R, W, 20, 1, false, 0, Math.PI);
+  lidGeometry.rotateZ(Math.PI / 2);
+  const lid = new THREE.Mesh(lidGeometry, woodMaterial);
+  lid.position.set(0, 0, R);
+  lidPivot.add(lid);
+  for (const x of [-W / 2 + .1, W / 2 - .1]) {
+    const bandGeometry = new THREE.CylinderGeometry(R + .012, R + .012, .07, 20, 1, false, 0, Math.PI);
+    bandGeometry.rotateZ(Math.PI / 2);
+    const band = new THREE.Mesh(bandGeometry, goldMaterial);
+    band.position.set(x, 0, R);
+    lidPivot.add(band);
+  }
+  const lidClasp = box(.1, .12, .04, goldMaterial, 0, .02, D + .015);
+  lidPivot.add(lidClasp);
+
+  const glowCanvas = document.createElement('canvas');
+  glowCanvas.width = glowCanvas.height = 128;
+  const glowContext = glowCanvas.getContext('2d');
+  const glowGradient = glowContext.createRadialGradient(64, 64, 0, 64, 64, 64);
+  glowGradient.addColorStop(0, 'rgba(255, 236, 176, 1)');
+  glowGradient.addColorStop(.25, 'rgba(255, 210, 120, .55)');
+  glowGradient.addColorStop(1, 'rgba(255, 200, 100, 0)');
+  glowContext.fillStyle = glowGradient;
+  glowContext.fillRect(0, 0, 128, 128);
+  const glowTexture = new THREE.CanvasTexture(glowCanvas);
+  glowTexture.colorSpace = THREE.SRGBColorSpace;
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false, toneMapped: false }));
+  glow.position.set(0, .4, 0);
+  chest.add(glow);
+  const chestLight = new THREE.PointLight('#ffc865', 0, 4.5, 1.6);
+  chestLight.position.set(0, .9, .2);
+  chest.add(chestLight);
+
+  const sparkleCount = 34;
+  const sparkleGeometry = new THREE.BufferGeometry();
+  sparkleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(sparkleCount * 3), 3));
+  const sparkleSeeds = Array.from({ length: sparkleCount }, () => ({ angle: random() * Math.PI * 2, radius: .3 + random() * .5, speed: .25 + random() * .35, phase: random() }));
+  const sparkles = new THREE.Points(sparkleGeometry, new THREE.PointsMaterial({ map: glowTexture, color: '#ffd77e', size: .09, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false }));
+  chest.add(sparkles);
+
+  const chestHint = document.querySelector('.chest-hint');
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+  const hitChest = event => {
+    if (chestState.reveal < .6 || chestState.opened) return false;
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1);
+    raycaster.setFromCamera(pointer, camera);
+    return raycaster.intersectObject(chest, true).length > 0;
+  };
+  let hovering = false;
+  renderer.domElement.addEventListener('pointermove', event => {
+    hovering = hitChest(event);
+    renderer.domElement.style.cursor = hovering ? 'pointer' : '';
+  });
+  renderer.domElement.addEventListener('pointerleave', () => { hovering = false; renderer.domElement.style.cursor = ''; });
+  const openChest = (x, y) => {
+    if (chestState.opened) return;
+    chestState.opened = true;
+    hovering = false;
+    renderer.domElement.style.cursor = '';
+    if (animate) {
+      gsap.to(chestState, { lid: 1, duration: .7, ease: 'back.out(1.4)' });
+      gsap.fromTo(chestState, { burst: 1.4 }, { burst: 0, duration: 1.4, ease: 'power2.out' });
+      gsap.delayedCall(.45, () => openTreasure(x, y));
+    } else {
+      chestState.lid = 1;
+      openTreasure(x, y);
+    }
+  };
+  renderer.domElement.addEventListener('click', event => { if (hitChest(event)) openChest(event.clientX, event.clientY); });
+  chestHint?.addEventListener('click', () => {
+    const rect = chestHint.getBoundingClientRect();
+    openChest(rect.left + rect.width / 2, rect.top + rect.height / 2);
+  });
+  document.addEventListener('treasure:closed', () => {
+    chestState.opened = false;
+    if (animate) gsap.to(chestState, { lid: 0, duration: .8, ease: 'power2.inOut' });
+    else chestState.lid = 0;
+  });
+  const projected = new THREE.Vector3();
+  function updateChest(time) {
+    const reveal = chestState.reveal;
+    chestState.hover += ((hovering ? 1 : 0) - chestState.hover) * .12;
+    chest.visible = reveal > .001;
+    if (!chest.visible) { if (chestHint) chestHint.hidden = true; return; }
+    const pulse = .5 + .5 * Math.sin(time * 2.4);
+    chest.scale.setScalar(Math.max(.0001, reveal) * (1 + chestState.hover * .05));
+    chest.position.y = chestY - (1 - Math.min(reveal, 1)) * .5 + (chestState.opened ? 0 : Math.sin(time * 1.6) * .015);
+    chestBody.rotation.z = chestState.hover * Math.sin(time * 18) * .012;
+    lidPivot.rotation.x = -(chestState.lid * 1.85 + chestState.hover * .16 * (1 - chestState.lid));
+    const glowStrength = Math.min(reveal, 1) * (.75 + pulse * .25 + chestState.hover * .35 + chestState.burst + chestState.lid * .4);
+    glow.scale.setScalar(1.6 + pulse * .25 + chestState.hover * .4 + chestState.burst * 1.6 + chestState.lid * .8);
+    glow.material.opacity = clamp(glowStrength * .85, 0, 1);
+    chestLight.intensity = glowStrength * 3.2;
+    goldMaterial.emissiveIntensity = .45 + pulse * .25 + chestState.hover * .4 + chestState.burst * .6;
+    const positions = sparkleGeometry.attributes.position;
+    sparkleSeeds.forEach((seed, i) => {
+      const t = (time * seed.speed + seed.phase) % 1;
+      const angle = seed.angle + time * .35;
+      const spread = seed.radius * (1 + chestState.burst * .8);
+      positions.setXYZ(i, Math.cos(angle) * spread, .15 + t * (1.15 + chestState.lid * .6), Math.sin(angle) * spread * .7);
+    });
+    positions.needsUpdate = true;
+    sparkles.material.opacity = Math.min(reveal, 1) * (.55 + chestState.hover * .3 + chestState.burst * .4);
+    if (chestHint) {
+      projected.set(chestX, chestY + 1.05, chestZ).project(camera);
+      const show = activeStop === CHEST_STOP && reveal > .8 && !chestState.opened && projected.z < 1 && Math.abs(projected.x) < 1.1;
+      chestHint.hidden = !show;
+      if (show) {
+        chestHint.style.left = `${(projected.x * .5 + .5) * stage.clientWidth}px`;
+        chestHint.style.top = `${(-projected.y * .5 + .5) * stage.clientHeight}px`;
+      }
+    }
+  }
+  const lookTarget = new THREE.Vector3();
+  const chestFocus = new THREE.Vector3(chestX, chestY + .3, chestZ);
+
   function resize() {
     const width = Math.max(1, stage.clientWidth), height = Math.max(1, stage.clientHeight);
     camera.aspect = width / height;
@@ -728,9 +927,11 @@ try {
 
   let firstFrame = true;
   let previousProgress = 0;
+  let smoothProgress = motion.progress;
   let walkingEnergy = 0;
   function render() {
-    const progress = reducedMotion ? 0 : clamp(motion.progress, 0, 1);
+    smoothProgress += (clamp(motion.progress, 0, 1) - smoothProgress) * (reducedMotion ? 1 : .09);
+    const progress = smoothProgress;
     if (story.getBoundingClientRect().bottom <= 0) {
       requestAnimationFrame(render);
       return;
@@ -742,7 +943,12 @@ try {
     const x = pathX(z);
     const stride = reducedMotion ? 0 : Math.sin(progress * 400) * walkingEnergy;
     camera.position.set(x + stride * .012, 1.77 + walkHeight(z) + stride * .018, z);
-    camera.lookAt(pathX(z - 10), 1.66 + walkHeight(z - 10), z - 10);
+    // Near the chest stop the gaze dips toward the chest so it sits in front of you.
+    const nearChest = 1 - clamp(Math.abs(progress - stops[CHEST_STOP]) / .09, 0, 1);
+    const focus = nearChest * nearChest * (3 - 2 * nearChest) * .72;
+    lookTarget.set(pathX(z - 10), 1.66 + walkHeight(z - 10), z - 10).lerp(chestFocus, focus);
+    camera.lookAt(lookTarget);
+    updateChest(performance.now() * .001);
     sun.position.set(x - 13, 21, z + 8);
     sun.target.position.set(x, 0, z - 10);
     sun.target.updateMatrixWorld();
@@ -769,3 +975,54 @@ try {
 } catch (error) {
   console.warn('Forest scene unavailable:', error);
 }
+
+// The chest's reward: a full-screen panel that opens as a circle from the chest.
+const treasure = document.getElementById('treasure');
+let treasureOrigin = { x: innerWidth * .8, y: innerHeight * .6 };
+let treasureReturnFocus = null;
+function openTreasure(x, y) {
+  if (!treasure || !treasure.hidden) return;
+  treasureOrigin = { x, y };
+  treasureReturnFocus = document.activeElement;
+  treasure.hidden = false;
+  document.body.classList.add('treasure-open');
+  lenis?.stop();
+  const items = treasure.querySelectorAll('[data-reveal]');
+  if (animate) {
+    gsap.fromTo(treasure, { clipPath: `circle(0px at ${x}px ${y}px)` }, { clipPath: `circle(150% at ${x}px ${y}px)`, duration: 1, ease: 'power3.inOut' });
+    gsap.fromTo(items, { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: .8, stagger: .08, ease: 'power3.out', delay: .45 });
+  } else {
+    treasure.style.clipPath = 'none';
+  }
+  treasure.querySelector('.treasure-close').focus({ preventScroll: true });
+}
+function closeTreasure(next) {
+  if (!treasure || treasure.hidden) return;
+  const finish = () => {
+    treasure.hidden = true;
+    document.body.classList.remove('treasure-open');
+    lenis?.start();
+    document.dispatchEvent(new CustomEvent('treasure:closed'));
+    if (next) {
+      const top = story.offsetTop + panels[CHEST_STOP + 1].offsetTop;
+      if (lenis) lenis.scrollTo(top, { duration: 1.6 });
+      else scrollTo({ top, behavior: reducedMotion ? 'auto' : 'smooth' });
+    } else treasureReturnFocus?.focus?.({ preventScroll: true });
+  };
+  if (animate) {
+    const { x, y } = treasureOrigin;
+    gsap.to(treasure, { clipPath: `circle(0px at ${x}px ${y}px)`, duration: .75, ease: 'power3.inOut', onComplete: finish });
+  } else finish();
+}
+treasure?.querySelector('.treasure-close').addEventListener('click', () => closeTreasure(false));
+treasure?.querySelector('.treasure-next').addEventListener('click', () => closeTreasure(true));
+document.addEventListener('keydown', event => {
+  if (!treasure || treasure.hidden) return;
+  if (event.key === 'Escape') { event.preventDefault(); closeTreasure(false); }
+  if (event.key === 'Tab') {
+    const focusable = [...treasure.querySelectorAll('button, a[href]')];
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  }
+});

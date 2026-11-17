@@ -147,6 +147,50 @@ section[id] { scroll-margin-top: 100px; }
 .site-footer a { justify-self: end; border-bottom: 1px solid currentColor; padding-bottom: 5px; transition: color .25s; }
 .site-footer a:hover { color: var(--accent); }
 
+/* Trail stops: each story panel's text sits on a card; the page settles magnetically on the nearest one. */
+.scene-stage { pointer-events: auto; }
+.scene-fallback, .scene-vignette { pointer-events: none; }
+.story { pointer-events: none; }
+.story-copy { pointer-events: auto; }
+.story-panel:not(.hero) .story-copy { max-width: 640px; padding: 34px 40px 38px; border: 1px solid rgba(74, 131, 170, .2); border-radius: 10px; background: rgba(255, 255, 255, .84); box-shadow: 0 26px 60px rgba(29, 78, 115, .12), 0 2px 0 rgba(255, 255, 255, .9) inset; backdrop-filter: blur(14px); }
+.story-panel:not(.hero) .lede { margin-top: 26px; }
+.stop-cue { display: flex; align-items: center; gap: 12px; margin: 22px 0 0; padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink); font-size: 14px; font-weight: 500; line-height: 1.45; }
+.stop-cue span { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #f0c25a; box-shadow: 0 0 0 4px rgba(240, 194, 90, .22), 0 0 16px rgba(240, 180, 70, .8); animation: cue-pulse 1.8s ease-in-out infinite; }
+@keyframes cue-pulse { 50% { box-shadow: 0 0 0 7px rgba(240, 194, 90, .1), 0 0 22px rgba(240, 180, 70, .95); } }
+
+.chest-hint { position: absolute; z-index: 3; display: inline-flex; align-items: center; gap: 9px; padding: 9px 15px 9px 11px; transform: translate(-50%, -100%); border: 1px solid rgba(240, 194, 90, .7); border-radius: 999px; background: rgba(22, 57, 85, .82); color: #fff; box-shadow: 0 0 0 4px rgba(240, 194, 90, .14), 0 10px 26px rgba(22, 57, 85, .25), 0 0 28px rgba(255, 200, 100, .35); backdrop-filter: blur(8px); font: 500 13px/1 var(--sans); letter-spacing: -.01em; white-space: nowrap; cursor: pointer; animation: hint-float 2.6s ease-in-out infinite; }
+.chest-hint[hidden] { display: none; }
+.chest-hint-dot { width: 8px; height: 8px; border-radius: 50%; background: #ffd77e; box-shadow: 0 0 10px #ffc65a; }
+.chest-hint:hover { background: rgba(22, 57, 85, .95); }
+.chest-hint:focus-visible { outline: 2px solid #ffd77e; outline-offset: 4px; }
+@keyframes hint-float { 50% { margin-top: -5px; } }
+
+.treasure { position: fixed; z-index: 200; inset: 0; overflow-y: auto; overscroll-behavior: contain; background: radial-gradient(120% 90% at 78% 18%, #24557d 0%, #163955 46%, #0f2a40 100%); color: #f3f8fc; }
+.treasure[hidden] { display: none; }
+.treasure-glow { position: fixed; right: -10vw; top: -20vh; width: 70vw; height: 70vw; border-radius: 50%; background: radial-gradient(circle, rgba(255, 205, 110, .28), rgba(255, 205, 110, 0) 62%); pointer-events: none; }
+.treasure-close { position: fixed; z-index: 2; top: clamp(20px, 3vw, 40px); right: clamp(20px, 3vw, 40px); display: inline-flex; align-items: center; gap: 12px; padding: 12px 14px 12px 18px; border: 1px solid rgba(255, 255, 255, .28); border-radius: 999px; background: rgba(255, 255, 255, .06); color: #fff; font: 500 14px/1 var(--sans); cursor: pointer; transition: background-color .3s, border-color .3s; }
+.treasure-close span { position: relative; width: 14px; height: 14px; }
+.treasure-close span::before, .treasure-close span::after { content: ''; position: absolute; left: 0; top: 6px; width: 14px; height: 1.5px; background: currentColor; transform: rotate(45deg); }
+.treasure-close span::after { transform: rotate(-45deg); }
+.treasure-close:hover { background: rgba(255, 255, 255, .14); border-color: rgba(255, 255, 255, .5); }
+.treasure-close:focus-visible, .treasure-next:focus-visible { outline: 2px solid #ffd77e; outline-offset: 4px; }
+.treasure-inner { position: relative; max-width: 1180px; margin: 0 auto; padding: clamp(96px, 14vh, 150px) 8vw 80px; }
+.treasure-eyebrow { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 22px; color: #ffd77e; font-size: 13px; font-weight: 500; }
+.treasure-eyebrow::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #ffd77e; box-shadow: 0 0 12px #ffc65a; }
+.treasure h2 { margin: 0; font: 400 clamp(64px, 8.4vw, 124px)/.82 var(--serif); letter-spacing: -.026em; text-wrap: balance; }
+.treasure h2 em { color: #ffd77e; }
+.treasure-lede { max-width: 600px; margin: 30px 0 0; color: rgba(236, 245, 251, .78); font-size: 18px; line-height: 1.55; text-wrap: pretty; }
+.treasure-finds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 56px; }
+.treasure-finds > div { padding: 24px 26px 28px; border: 1px solid rgba(255, 255, 255, .14); border-radius: 10px; background: rgba(255, 255, 255, .05); }
+.treasure-finds span { color: #ffd77e; font: 400 27px/.9 var(--serif); }
+.treasure-finds h3 { margin: 18px 0 0; font: 400 clamp(36px, 3.2vw, 46px)/.9 var(--serif); letter-spacing: -.02em; }
+.treasure-finds p { margin: 14px 0 0; color: rgba(236, 245, 251, .72); font-size: 15px; line-height: 1.5; }
+.treasure-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px 40px; margin-top: 44px; padding-top: 28px; border-top: 1px solid rgba(255, 255, 255, .16); }
+.treasure-foot p { max-width: 520px; margin: 0; color: rgba(236, 245, 251, .85); font-size: 16px; line-height: 1.5; }
+.treasure-next { height: 56px; padding: 0 26px; border: 1px solid #ffd77e; border-radius: 6px; background: #ffd77e; color: #163955; box-shadow: 4px 4px 0 rgba(255, 215, 126, .25); font: 500 15px/1 var(--sans); cursor: pointer; transition: transform .4s cubic-bezier(.22, 1, .36, 1), box-shadow .4s; }
+.treasure-next:hover { transform: translate(-2px, -3px); box-shadow: 7px 8px 0 rgba(255, 215, 126, .3); }
+body.treasure-open { overflow: hidden; }
+
 @media (max-width: 1050px) {
   .story-panel { width: 60vw; }
   .site-header { grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr); }
@@ -206,6 +250,10 @@ section[id] { scroll-margin-top: 100px; }
   .moment-index { margin-bottom: 16px; }
   .moment h3 { max-width: 330px; font-size: 47px; }
   .moment > p { margin-top: 14px; font-size: 15px; }
+  .story-panel:not(.hero) .story-copy { padding: 22px 22px 24px; }
+  .stop-cue { display: none; }
+  .treasure-finds { grid-template-columns: 1fr; margin-top: 36px; }
+  .treasure-lede { font-size: 16px; }
   .engagement { grid-template-columns: 1fr; gap: 28px; min-height: 0; padding: 58px 6% 66px; }
   .engagement-art { justify-content: flex-start; }
   .engagement-art-frame { width: min(75vw, 310px); min-width: 0; }
