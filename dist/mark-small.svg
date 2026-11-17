@@ -1,4 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Project Unbounded geometric unicorn mark">
-  <path d="M88 36 104 8 80 29Z" fill="#2f74a9"/>
-  <path d="M62 15 44 20 29 34 21 52 21 72 33 92 54 107 54 85 62 72 74 65 86 68 97 75 106 71 110 63 96 52 88 36 104 8 80 29 70 20Z" fill="none" stroke="#163955" stroke-width="7.5" stroke-linecap="square" stroke-linejoin="miter" stroke-miterlimit="3"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Project Unbounded unicorn mark">
+  <g fill="none" stroke="#102e45" stroke-width="7.5" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M61 14C36 12 16 28 12 52 7 78 22 97 58 111V86"/>
+    <path d="M62 23C42 21 28 36 28 55c0 19 12 31 30 33"/>
+    <path d="M65 27 109 11 89 35"/>
+    <path d="M75 24 98 40c10 8 13 19 8 29L90 83 73 67c-15 8-29 2-31-11-2-15 9-27 23-29"/>
+  </g>
 </svg>
