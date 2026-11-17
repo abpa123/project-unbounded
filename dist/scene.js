@@ -2,7 +2,6 @@ import * as THREE from './vendor/three.module.js';
 
 const stage = document.getElementById('scene-canvas');
 const story = document.querySelector('.story');
-const sceneProgress = document.querySelector('.scene-progress');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const motion = { progress: 0 };
 const clamp = THREE.MathUtils.clamp;
@@ -700,7 +699,6 @@ try {
   let walkingEnergy = 0;
   function render() {
     const progress = reducedMotion ? 0 : clamp(motion.progress, 0, 1);
-    sceneProgress.style.transform = innerWidth <= 850 ? `scaleX(${progress})` : `scaleY(${progress})`;
     if (story.getBoundingClientRect().bottom <= 0) {
       requestAnimationFrame(render);
       return;

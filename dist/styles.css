@@ -52,13 +52,12 @@ section[id] { scroll-margin-top: 100px; }
 .site-header nav a:hover::after, .site-header nav a.is-active::after { transform: scaleX(1); }
 .site-header a:focus-visible, .explore-button:focus-visible, .site-footer a:focus-visible { outline: 2px solid var(--electric); outline-offset: 5px; }
 
-.scene-stage { position: fixed; z-index: 0; top: 0; right: 0; width: 38vw; height: 100svh; overflow: hidden; border-left: 3px solid rgba(47, 104, 145, .32); background: #eaf4fa; box-shadow: -12px 0 30px rgba(31, 70, 84, .06); pointer-events: none; }
+.scene-stage { position: fixed; z-index: 0; top: 0; right: 0; width: 38vw; height: 100svh; overflow: hidden; background: #eaf4fa; pointer-events: none; }
 .scene-canvas, .scene-fallback { position: absolute; inset: 0; width: 100%; height: 100%; }
 .scene-fallback { display: block; object-fit: cover; transition: opacity .8s; }
 .webgl-ready .scene-fallback { opacity: 0; }
 .scene-canvas canvas { display: block; width: 100%; height: 100%; }
-.scene-stage::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(178, 210, 222, .15), transparent 11%), linear-gradient(180deg, rgba(232, 243, 248, .17), transparent 21%, transparent 76%, rgba(196, 222, 231, .14)); pointer-events: none; }
-.scene-progress { position: absolute; z-index: 2; top: 0; left: -2px; width: 3px; height: 100%; background: rgba(47, 104, 145, .8); transform: scaleY(0); transform-origin: top center; will-change: transform; }
+.scene-stage::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(232, 243, 248, .17), transparent 21%, transparent 76%, rgba(196, 222, 231, .14)); pointer-events: none; }
 
 .story { position: relative; z-index: 2; }
 .story-panel { position: relative; width: 62vw; height: 100svh; min-height: 750px; padding: 18svh clamp(36px, 6.4vw, 108px) 45px; border-bottom: 1px solid var(--line); background: linear-gradient(145deg, #fbfdff, #f2f8fc); }
@@ -168,7 +167,6 @@ section[id] { scroll-margin-top: 100px; }
   .site-header nav a:nth-child(2) { display: none; }
   .scene-stage { z-index: 4; top: max(420px, 52svh); right: 0; bottom: 0; left: 0; width: auto; height: auto; border-top: 3px solid rgba(47, 104, 145, .32); border-left: 0; box-shadow: 0 -10px 25px rgba(31, 70, 84, .05); }
   .scene-stage::after { background: linear-gradient(180deg, rgba(247, 251, 253, .05), transparent 18%); }
-  .scene-progress { top: -2px; left: 0; width: 100%; height: 3px; transform: scaleX(0); transform-origin: left center; }
   .story-panel { display: flex; width: 100%; height: 100svh; min-height: 700px; align-items: flex-start; padding: 115px 6% 45px; background: linear-gradient(180deg, var(--paper) 0%, var(--paper) 43%, rgba(247, 251, 253, .92) 49%, transparent 58%); }
   .story-panel:not(.hero) { height: 100svh; }
   .story-copy { position: sticky; top: 115px; }
