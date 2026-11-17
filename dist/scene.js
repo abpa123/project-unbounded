@@ -131,17 +131,12 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
     opacity: 0, y: 12, duration: .65, stagger: .1, ease: 'power2.out',
     scrollTrigger: { trigger: '.site-footer', start: 'top 95%' }
   });
-  gsap.timeline({ scrollTrigger: { trigger: '.engagement', start: 'top 80%', end: 'top 30%', scrub: .5 } })
-    .from('.engagement-art-frame', { opacity: 0, scale: .9, ease: 'power2.out', duration: .8 }, 0)
-    .from('.engagement-art-frame img', { opacity: 0, scale: .7, rotation: -8, ease: 'power2.out', duration: .65 }, .4);
-  for (const [selector, trigger] of [['.practice-route path', '.practice'], ['.route-symbol-main', '.engagement']]) {
-    const path = document.querySelector(selector);
-    const length = path.getTotalLength();
-    gsap.fromTo(path, { strokeDasharray: length, strokeDashoffset: length }, {
-      strokeDashoffset: 0, ease: 'none',
-      scrollTrigger: { trigger, start: 'top 78%', end: 'top 30%', scrub: .55 }
-    });
-  }
+  const practicePath = document.querySelector('.practice-route path');
+  const practicePathLength = practicePath.getTotalLength();
+  gsap.fromTo(practicePath, { strokeDasharray: practicePathLength, strokeDashoffset: practicePathLength }, {
+    strokeDashoffset: 0, ease: 'none',
+    scrollTrigger: { trigger: '.practice', start: 'top 78%', end: 'top 30%', scrub: .55 }
+  });
 } else {
   const updateProgress = () => {
     const length = Math.max(1, story.offsetHeight - innerHeight);
