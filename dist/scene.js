@@ -95,11 +95,21 @@ function randomGenerator(seed) {
 const random = randomGenerator(20261116);
 const pathX = z => 2 * Math.sin((z - 12) * .072) + .65 * Math.sin(z * .16 + 1);
 const pathWidth = z => 1.5 + .16 * Math.sin(z * .073);
+const bridgeNear = -39.4;
+const bridgeFar = -46.6;
+const trailHeight = z => .38 * Math.sin(z * .065 + 1) + .12 * Math.sin(z * .19 - .4);
+const riverCenter = x => -43 + .67 * Math.sin(x * .32) + .24 * Math.sin(x * .72);
+const bridgeHeight = z => {
+  const t = clamp((bridgeNear - z) / (bridgeNear - bridgeFar), 0, 1);
+  return trailHeight(z) + .035 + .75 * Math.sin(Math.PI * t);
+};
+const walkHeight = z => z <= bridgeNear && z >= bridgeFar ? bridgeHeight(z) : trailHeight(z) + .035;
 function groundHeight(x, z) {
   const away = clamp((Math.abs(x - pathX(z)) - 1.5) / 4, 0, 1);
   const rolls = .22 * Math.sin(x * .22 + z * .055) + .13 * Math.sin(z * .27 - x * .16) + .09 * Math.cos(x * .54 + z * .19);
-  const stream = .34 * Math.exp(-(((z + 43) / 2.7) ** 2));
-  return rolls * away - stream;
+  const riverDistance = Math.abs(z - riverCenter(x));
+  const channel = .96 * Math.exp(-Math.pow(riverDistance / 2.35, 4));
+  return trailHeight(z) + rolls * away - channel;
 }
 
 try {
@@ -132,19 +142,21 @@ try {
   scene.add(sun.target);
 
   // A rolling ground surface leaves a quiet clearing around the walkable path.
-  const groundGeometry = new THREE.PlaneGeometry(70, 150, 80, 160);
+  const groundGeometry = new THREE.PlaneGeometry(70, 150, 110, 220);
   groundGeometry.rotateX(-Math.PI / 2);
   groundGeometry.translate(0, 0, -45);
   const groundPosition = groundGeometry.attributes.position;
   const groundColors = [];
   const groundNear = new THREE.Color('#dce9ec');
   const groundFar = new THREE.Color('#aec8ca');
+  const riverBank = new THREE.Color('#91aeb7');
   for (let i = 0; i < groundPosition.count; i++) {
     const x = groundPosition.getX(i), z = groundPosition.getZ(i);
     const h = groundHeight(x, z);
     groundPosition.setY(i, h);
     const mix = clamp((Math.abs(x - pathX(z)) - 2) / 20, 0, 1) * .68 + clamp(h * .35, 0, .25);
     const color = groundNear.clone().lerp(groundFar, mix);
+    color.lerp(riverBank, clamp(1 - Math.abs(z - riverCenter(x)) / 3.2, 0, 1) * .34);
     groundColors.push(color.r, color.g, color.b);
   }
   groundGeometry.setAttribute('color', new THREE.Float32BufferAttribute(groundColors, 3));
@@ -158,9 +170,9 @@ try {
   for (let i = 0; i <= 520; i++) {
     const z = 19 - i * 140 / 520;
     const x = pathX(z), w = pathWidth(z);
-    const y = Math.max(.02, groundHeight(x, z) + .035);
+    const y = trailHeight(z) + .035;
     trailVertices.push(x - w, y, z, x + w, y, z);
-    if (i > 0 && !(z < -40.8 && z > -45.2)) {
+    if (i > 0 && !(z < bridgeNear && z > bridgeFar)) {
       const a = (i - 1) * 2, b = i * 2;
       trailIndices.push(a, a + 1, b, a + 1, b + 1, b);
     }
@@ -173,27 +185,137 @@ try {
   trail.receiveShadow = true;
   scene.add(trail);
 
-  const streamVertices = [], streamIndices = [];
+  // The river sits below the banks; soft moving lines suggest a slow current.
+  const streamVertices = [], streamIndices = [], streamUvs = [], streamColors = [];
+  const waterDeep = new THREE.Color('#70a8ba');
+  const waterEdge = new THREE.Color('#a9cbd3');
+  const waterColumns = 9;
   for (let i = 0; i <= 80; i++) {
     const x = -35 + i * 70 / 80;
-    const center = -43 + .45 * Math.sin(x * .23) + .22 * Math.sin(x * .54);
-    const halfWidth = 2.2 + .25 * Math.sin(x * .36);
-    streamVertices.push(x, -.16, center - halfWidth, x, -.16, center + halfWidth);
-    if (i) { const a = (i - 1) * 2, b = i * 2; streamIndices.push(a, b, a + 1, a + 1, b, b + 1); }
+    const center = riverCenter(x);
+    const halfWidth = 3.1 + .18 * Math.sin(x * .36);
+    const surface = trailHeight(center) - .66;
+    for (let j = 0; j < waterColumns; j++) {
+      const v = j / (waterColumns - 1);
+      streamVertices.push(x, surface, center + (v * 2 - 1) * halfWidth);
+      streamUvs.push(i / 80, v);
+      const color = waterDeep.clone().lerp(waterEdge, Math.abs(v - .5) * .9);
+      color.offsetHSL(0, 0, .025 * Math.sin(x * .91 + v * 11));
+      streamColors.push(color.r, color.g, color.b);
+      if (i && j) {
+        const a = (i - 1) * waterColumns + j - 1, b = i * waterColumns + j - 1;
+        streamIndices.push(a, b, a + 1, a + 1, b, b + 1);
+      }
+    }
   }
   const streamGeometry = new THREE.BufferGeometry();
   streamGeometry.setAttribute('position', new THREE.Float32BufferAttribute(streamVertices, 3));
+  streamGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(streamUvs, 2));
+  streamGeometry.setAttribute('color', new THREE.Float32BufferAttribute(streamColors, 3));
   streamGeometry.setIndex(streamIndices);
   streamGeometry.computeVertexNormals();
-  scene.add(new THREE.Mesh(streamGeometry, new THREE.MeshStandardMaterial({ color: '#aacbd4', roughness: 1, metalness: 0, side: THREE.DoubleSide })));
-  const steppingStoneMaterial = new THREE.MeshStandardMaterial({ color: '#c5d9dd', roughness: 1, metalness: 0 });
-  for (let i = 0; i < 9; i++) {
-    const z = -40.7 - i * .56;
-    const stone = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12), steppingStoneMaterial);
-    stone.position.set(pathX(z) + Math.sin(i * 2.3) * .28, .025, z);
-    stone.scale.set(.72 + random() * .18, .13, .32 + random() * .07);
-    stone.rotation.y = .18 * Math.sin(i);
+  scene.add(new THREE.Mesh(streamGeometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, side: THREE.DoubleSide })));
+  const rippleCanvas = document.createElement('canvas');
+  rippleCanvas.width = 512;
+  rippleCanvas.height = 256;
+  const rippleContext = rippleCanvas.getContext('2d');
+  for (let i = 0; i < 48; i++) {
+    const x = random() * 512, y = random() * 256, length = 28 + random() * 95;
+    rippleContext.strokeStyle = `rgba(235, 250, 252, ${.24 + random() * .32})`;
+    rippleContext.lineWidth = 1 + random() * 1.6;
+    rippleContext.lineCap = 'round';
+    rippleContext.beginPath();
+    rippleContext.moveTo(x, y);
+    rippleContext.bezierCurveTo(x + length * .3, y - 3, x + length * .7, y + 3, x + length, y);
+    rippleContext.stroke();
+  }
+  const rippleTexture = new THREE.CanvasTexture(rippleCanvas);
+  rippleTexture.colorSpace = THREE.SRGBColorSpace;
+  rippleTexture.wrapS = THREE.RepeatWrapping;
+  rippleTexture.repeat.set(6, 1);
+  const rippleGeometry = streamGeometry.clone();
+  const ripplePosition = rippleGeometry.attributes.position;
+  for (let i = 0; i < ripplePosition.count; i++) ripplePosition.setY(i, ripplePosition.getY(i) + .012);
+  rippleGeometry.computeVertexNormals();
+  scene.add(new THREE.Mesh(rippleGeometry, new THREE.MeshBasicMaterial({ map: rippleTexture, transparent: true, opacity: .85, depthWrite: false, side: THREE.DoubleSide })));
+  const currentMaterial = new THREE.MeshBasicMaterial({ color: '#d9edf0', transparent: true, opacity: .53, depthWrite: false });
+  for (let i = 0; i < 38; i++) {
+    const startX = (random() - .5) * 25;
+    const length = .45 + random() * 1.1;
+    const offset = (random() - .5) * 2.7;
+    const points = [];
+    for (let step = 0; step <= 6; step++) {
+      const x = startX + length * step / 6;
+      const center = riverCenter(x);
+      points.push(new THREE.Vector3(x, trailHeight(center) - .635, center + offset + .045 * Math.sin(step * .9 + i)));
+    }
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 12, .008, 5, false), currentMaterial));
+  }
+  const riverStoneGeometry = new THREE.SphereGeometry(1, 14, 10);
+  const riverStoneMaterial = new THREE.MeshStandardMaterial({ color: '#a9c3c9', roughness: 1, metalness: 0 });
+  for (let i = 0; i < 27; i++) {
+    const x = (random() - .5) * 20;
+    if (Math.abs(x - pathX(-43)) < 2.1) continue;
+    const center = riverCenter(x);
+    const z = center + (random() - .5) * 2.5;
+    const stone = new THREE.Mesh(riverStoneGeometry, riverStoneMaterial);
+    stone.position.set(x, trailHeight(center) - .65, z);
+    stone.scale.set(.12 + random() * .22, .10 + random() * .13, .13 + random() * .24);
+    stone.rotation.y = random() * Math.PI;
     scene.add(stone);
+  }
+
+  // A gently arched deck makes the crossing legible from the walking camera.
+  const bridgeVertices = [], bridgeIndices = [];
+  for (let i = 0; i <= 72; i++) {
+    const z = bridgeNear + (bridgeFar - bridgeNear) * i / 72;
+    const x = pathX(z), width = pathWidth(z) + .14, y = bridgeHeight(z);
+    bridgeVertices.push(x - width, y, z, x + width, y, z, x - width, y - .13, z, x + width, y - .13, z);
+    if (i) {
+      const a = (i - 1) * 4, b = i * 4;
+      bridgeIndices.push(a, a + 1, b, a + 1, b + 1, b, a, b, a + 2, a + 2, b, b + 2, a + 1, a + 3, b + 1, a + 3, b + 3, b + 1);
+    }
+  }
+  const bridgeGeometry = new THREE.BufferGeometry();
+  bridgeGeometry.setAttribute('position', new THREE.Float32BufferAttribute(bridgeVertices, 3));
+  bridgeGeometry.setIndex(bridgeIndices);
+  bridgeGeometry.computeVertexNormals();
+  scene.add(new THREE.Mesh(bridgeGeometry, new THREE.MeshStandardMaterial({ color: '#b8cbd0', roughness: 1, metalness: 0, side: THREE.DoubleSide })));
+  const abutmentMaterial = new THREE.MeshStandardMaterial({ color: '#a2b9bf', roughness: 1, metalness: 0 });
+  for (const z of [bridgeNear, bridgeFar]) {
+    for (const side of [-1, 1]) {
+      const x = pathX(z) + side * (pathWidth(z) + .2);
+      const stone = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), abutmentMaterial);
+      stone.scale.set(.29, .18, .44);
+      stone.position.set(x, groundHeight(x, z) + .065, z);
+      scene.add(stone);
+    }
+  }
+  const railMaterial = new THREE.MeshStandardMaterial({ color: '#829fa7', roughness: 1, metalness: 0 });
+  const seamMaterial = new THREE.MeshStandardMaterial({ color: '#9fb8bf', roughness: 1, metalness: 0 });
+  for (let i = 1; i < 21; i++) {
+    const z = bridgeNear + (bridgeFar - bridgeNear) * i / 21;
+    const x = pathX(z), width = pathWidth(z) + .1, y = bridgeHeight(z) + .009;
+    const curve = new THREE.LineCurve3(new THREE.Vector3(x - width, y, z), new THREE.Vector3(x + width, y, z));
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 2, .008, 5, false), seamMaterial));
+  }
+  for (const side of [-1, 1]) {
+    const lower = [], upper = [];
+    for (let i = 0; i <= 36; i++) {
+      const z = bridgeNear + (bridgeFar - bridgeNear) * i / 36;
+      const x = pathX(z) + side * (pathWidth(z) + .15);
+      lower.push(new THREE.Vector3(x, bridgeHeight(z) + .04, z));
+      upper.push(new THREE.Vector3(x, bridgeHeight(z) + .74, z));
+    }
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(lower), 48, .065, 8, false), railMaterial));
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(upper), 48, .052, 8, false), railMaterial));
+    for (let i = 0; i <= 8; i++) {
+      const z = bridgeNear + (bridgeFar - bridgeNear) * i / 8;
+      const x = pathX(z) + side * (pathWidth(z) + .15);
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(.048, .048, .7, 10), railMaterial);
+      post.position.set(x, bridgeHeight(z) + .39, z);
+      scene.add(post);
+    }
   }
 
   // Sculpt one irregular canopy shape, then compose hundreds of distinct trees from it.
@@ -215,6 +337,7 @@ try {
   const trees = [];
   for (let i = 0; i < (innerWidth < 700 ? 180 : 275); i++) {
     const z = 19 - random() * 137;
+    if (Math.abs(z + 43) < 4) continue;
     if (z < -76 && random() < .38) continue; // the final stretch opens into a clearing
     const side = i % 2 ? 1 : -1;
     const distance = 3.15 + Math.pow(random(), 1.45) * 21;
@@ -274,7 +397,8 @@ try {
   const youngTrunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(.055, .09, 1, 10), trunkMaterial, youngCount);
   const youngCrowns = new THREE.InstancedMesh(blobGeometry, canopyMaterial, youngCount * 2);
   for (let i = 0; i < youngCount; i++) {
-    const z = 17 - random() * 132;
+    let z = 17 - random() * 132;
+    if (Math.abs(z + 43) < 4) z -= 8;
     const side = i % 2 ? 1 : -1;
     const x = pathX(z) + side * (2.45 + random() * 5.3);
     const y = groundHeight(x, z);
@@ -325,10 +449,12 @@ try {
   const grass = new THREE.InstancedMesh(blobGeometry, new THREE.MeshStandardMaterial({ color: '#86afb0', roughness: 1 }), innerWidth < 700 ? 250 : 430);
   const rocks = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 14, 10), rockMaterial, innerWidth < 700 ? 110 : 180);
   for (let i = 0; i < shrubs.count; i++) {
-    const z = 20 - random() * 138, side = random() < .5 ? -1 : 1;
+    let z = 20 - random() * 138;
+    if (Math.abs(z + 43) < 4) z -= 8;
+    const side = random() < .5 ? -1 : 1;
     const x = pathX(z) + side * (2.1 + random() * 15);
     const size = .22 + random() * .54;
-    dummy.position.set(x, groundHeight(x, z) + size * .43, z);
+    dummy.position.set(x, groundHeight(x, z) + size * .31, z);
     dummy.quaternion.identity();
     dummy.rotation.set(0, random() * Math.PI * 2, 0);
     dummy.scale.set(size * 1.25, size * .62, size);
@@ -337,10 +463,12 @@ try {
     shrubs.setColorAt(i, shrubColors[Math.floor(random() * shrubColors.length)]);
   }
   for (let i = 0; i < grass.count; i++) {
-    const z = 20 - random() * 138, side = random() < .5 ? -1 : 1;
+    let z = 20 - random() * 138;
+    if (Math.abs(z + 43) < 4) z -= 8;
+    const side = random() < .5 ? -1 : 1;
     const x = pathX(z) + side * (1.8 + random() * 10);
     const height = .24 + random() * .42;
-    dummy.position.set(x, groundHeight(x, z) + height * .5, z);
+    dummy.position.set(x, groundHeight(x, z) + height * .28, z);
     dummy.quaternion.identity();
     dummy.rotation.set(0, random() * Math.PI * 2, (random() - .5) * .4);
     dummy.scale.set(.10 + random() * .09, height * .55, .10 + random() * .09);
@@ -348,7 +476,9 @@ try {
     grass.setMatrixAt(i, dummy.matrix);
   }
   for (let i = 0; i < rocks.count; i++) {
-    const z = 20 - random() * 138, side = random() < .5 ? -1 : 1;
+    let z = 20 - random() * 138;
+    if (Math.abs(z + 43) < 4) z -= 8;
+    const side = random() < .5 ? -1 : 1;
     const x = pathX(z) + side * (1.65 + random() * 9);
     const size = .1 + random() * .27 + Math.pow(random(), 9) * .5;
     dummy.position.set(x, groundHeight(x, z) + size * .28, z);
@@ -369,10 +499,11 @@ try {
   const trailStones = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), rockMaterial, innerWidth < 700 ? 220 : 360);
   const trailStoneColors = ['#c3d8df', '#d2e3e9', '#b7d0d8'].map(value => new THREE.Color(value));
   for (let i = 0; i < trailStones.count; i++) {
-    const z = 17 - random() * 132;
+    let z = 17 - random() * 132;
+    if (z < bridgeNear && z > bridgeFar) z -= 8;
     const x = pathX(z) + (random() - .5) * pathWidth(z) * 1.65;
     const size = .035 + random() * .07;
-    dummy.position.set(x, .052, z);
+    dummy.position.set(x, trailHeight(z) + .046, z);
     dummy.quaternion.identity();
     dummy.rotation.set(0, random() * Math.PI * 2, 0);
     dummy.scale.set(size * 1.4, size * .22, size);
@@ -387,7 +518,9 @@ try {
   const ferns = new THREE.InstancedMesh(blobGeometry, new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1 }), innerWidth < 700 ? 130 : 220);
   const fernColors = ['#8cb1b5', '#9ec0c2', '#afcdce'].map(value => new THREE.Color(value));
   for (let i = 0; i < ferns.count; i++) {
-    const z = 17 - random() * 134, side = random() < .5 ? -1 : 1;
+    let z = 17 - random() * 134;
+    if (Math.abs(z + 43) < 4) z -= 8;
+    const side = random() < .5 ? -1 : 1;
     const x = pathX(z) + side * (2.2 + random() * 6.5);
     const size = .42 + random() * .64;
     dummy.position.set(x, groundHeight(x, z) + .015, z);
@@ -404,13 +537,19 @@ try {
 
   const fallenLogs = new THREE.InstancedMesh(new THREE.CylinderGeometry(.105, .14, 1, 8), trunkMaterial, 24);
   for (let i = 0; i < fallenLogs.count; i++) {
-    const z = 16 - random() * 130, side = random() < .5 ? -1 : 1;
+    let z = 16 - random() * 130;
+    if (Math.abs(z + 43) < 4) z -= 8;
+    const side = random() < .5 ? -1 : 1;
     const x = pathX(z) + side * (3.1 + random() * 11);
     const angle = random() * Math.PI * 2;
-    const direction = new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle));
-    dummy.position.set(x, groundHeight(x, z) + .13, z);
-    dummy.quaternion.setFromUnitVectors(up, direction);
-    dummy.scale.set(1, 1.1 + random() * 2.2, 1);
+    const length = 1.1 + random() * 2.2;
+    const halfX = Math.cos(angle) * length * .5, halfZ = Math.sin(angle) * length * .5;
+    const endA = new THREE.Vector3(x - halfX, groundHeight(x - halfX, z - halfZ) + .11, z - halfZ);
+    const endB = new THREE.Vector3(x + halfX, groundHeight(x + halfX, z + halfZ) + .11, z + halfZ);
+    const direction = endB.clone().sub(endA);
+    dummy.position.copy(endA.add(endB).multiplyScalar(.5));
+    dummy.quaternion.setFromUnitVectors(up, direction.clone().normalize());
+    dummy.scale.set(1, direction.length(), 1);
     dummy.updateMatrix();
     fallenLogs.setMatrixAt(i, dummy.matrix);
   }
@@ -431,11 +570,26 @@ try {
     const progress = reducedMotion ? 0 : clamp(motion.progress, 0, 1);
     const z = 12 - progress * 92;
     const x = pathX(z);
-    camera.position.set(x, 1.77, z);
-    camera.lookAt(pathX(z - 10), 1.66, z - 10);
+    camera.position.set(x, 1.77 + walkHeight(z), z);
+    camera.lookAt(pathX(z - 10), 1.66 + walkHeight(z - 10), z - 10);
     sun.position.set(x - 13, 21, z + 8);
     sun.target.position.set(x, 0, z - 10);
     sun.target.updateMatrixWorld();
+    if (!reducedMotion) {
+      const time = performance.now() * .001;
+      const waterPosition = streamGeometry.attributes.position;
+      for (let i = 0; i < waterPosition.count; i++) {
+        const x = waterPosition.getX(i), z = waterPosition.getZ(i);
+        const base = streamVertices[i * 3 + 1];
+        const wave = .025 * Math.sin(x * 1.45 - time * 1.3 + z * .8) + .013 * Math.sin(x * 2.6 + time * .8 - z * 1.1);
+        waterPosition.setY(i, base + wave);
+        ripplePosition.setY(i, base + wave + .012);
+      }
+      waterPosition.needsUpdate = true;
+      ripplePosition.needsUpdate = true;
+      streamGeometry.computeVertexNormals();
+      rippleTexture.offset.x = (time * .012) % 1;
+    }
     renderer.render(scene, camera);
     if (firstFrame) { document.body.classList.add('webgl-ready'); firstFrame = false; }
     requestAnimationFrame(render);
