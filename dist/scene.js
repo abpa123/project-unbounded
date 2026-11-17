@@ -5,9 +5,22 @@ const story = document.querySelector('.story');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const motion = { progress: 0 };
 const clamp = THREE.MathUtils.clamp;
+const header = document.querySelector('.site-header');
+const nav = header.querySelector('nav');
+const navLinks = [...nav.querySelectorAll('a')];
+let hoveredNavLink = null;
+
+function positionNavIndicator(link) {
+  if (!link || getComputedStyle(link).display === 'none') {
+    nav.style.setProperty('--indicator-opacity', '0');
+    return;
+  }
+  nav.style.setProperty('--indicator-x', `${link.offsetLeft}px`);
+  nav.style.setProperty('--indicator-width', `${link.offsetWidth}px`);
+  nav.style.setProperty('--indicator-opacity', '1');
+}
 
 function updateNavigation() {
-  const header = document.querySelector('.site-header');
   header.classList.toggle('is-scrolled', window.scrollY > 90);
   const capabilitiesRect = document.getElementById('capabilities').getBoundingClientRect();
   const capabilitiesVisible = capabilitiesRect.top < innerHeight * .55 && capabilitiesRect.bottom > 80;
@@ -15,10 +28,35 @@ function updateNavigation() {
   const practiceVisible = practiceRect.top < innerHeight * .55 && practiceRect.bottom > 80;
   header.classList.toggle('on-capabilities', practiceRect.top < innerHeight * .55);
   const active = capabilitiesVisible ? '#capabilities' : practiceVisible ? '#practice' : document.getElementById('approach').getBoundingClientRect().top < innerHeight * .52 ? '#approach' : '';
-  document.querySelectorAll('.site-header nav a').forEach(link => link.classList.toggle('is-active', link.getAttribute('href') === active));
+  navLinks.forEach(link => link.classList.toggle('is-active', link.getAttribute('href') === active));
+  positionNavIndicator(hoveredNavLink || navLinks.find(link => link.classList.contains('is-active')));
 }
 addEventListener('scroll', updateNavigation, { passive: true });
+addEventListener('resize', updateNavigation, { passive: true });
+navLinks.forEach(link => link.addEventListener('mouseenter', () => {
+  hoveredNavLink = link;
+  positionNavIndicator(link);
+}));
+nav.addEventListener('mouseleave', () => {
+  hoveredNavLink = null;
+  updateNavigation();
+});
 updateNavigation();
+
+const momentsRoute = document.querySelector('.moments-route path');
+const routeStops = [...document.querySelectorAll('.moments-route circle')];
+const moments = [...document.querySelectorAll('.moment')];
+const routeLength = momentsRoute.getTotalLength();
+routeStops.forEach(stop => {
+  const x = Number(stop.getAttribute('cx'));
+  let low = 0, high = routeLength;
+  for (let i = 0; i < 24; i++) {
+    const middle = (low + high) / 2;
+    if (momentsRoute.getPointAtLength(middle).x < x) low = middle;
+    else high = middle;
+  }
+  stop.setAttribute('cy', momentsRoute.getPointAtLength((low + high) / 2).y.toFixed(2));
+});
 
 if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   gsap.registerPlugin(ScrollTrigger);
@@ -37,9 +75,9 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
 
   const hero = document.querySelector('.hero');
   gsap.timeline({ defaults: { ease: 'power3.out' } })
-    .from(hero.querySelectorAll('.type-line'), { opacity: 0, y: 42, rotationX: -8, scaleY: .97, transformOrigin: '50% 100%', stagger: .13, duration: 1.1 })
-    .from(hero.querySelector('.lede'), { opacity: 0, y: 18, duration: .85 }, '-=.55')
-    .from(hero.querySelector('.explore-button'), { opacity: 0, y: 20, scale: .96, duration: .8 }, '-=.48');
+    .from(hero.querySelectorAll('.type-line'), { opacity: 0, y: 54, rotationX: -9, scaleY: .94, transformOrigin: '50% 100%', stagger: .18, duration: 1.2 })
+    .from(hero.querySelector('.lede'), { opacity: 0, y: 22, duration: .9 }, '-=.62')
+    .from(hero.querySelector('.explore-button'), { opacity: 0, y: 24, scale: .97, duration: .9 }, '-=.5');
 
   document.querySelectorAll('.story-panel:not(.hero)').forEach(panel => {
     const timeline = gsap.timeline({
@@ -69,15 +107,19 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   document.querySelectorAll('.practice-list > div, .service-list > div').forEach(row => {
     const [number, title, detail] = row.children;
     gsap.timeline({ scrollTrigger: { trigger: row, start: 'top 90%' }, defaults: { ease: 'power3.out' } })
-      .from(number, { opacity: 0, x: -18, duration: .65 })
-      .from(title, { opacity: 0, x: -24, duration: .8 }, '-=.48')
-      .from(detail, { opacity: 0, x: 20, duration: .8 }, '-=.55');
+      .from(row, { opacity: 0, y: 25, scale: .98, duration: .85 })
+      .from(number, { opacity: 0, x: -14, duration: .6 }, '-=.56')
+      .from(title, { opacity: 0, x: -18, duration: .72 }, '-=.53')
+      .from(detail, { opacity: 0, y: 12, duration: .72 }, '-=.5');
   });
-  document.querySelectorAll('.moment').forEach(moment => {
-    gsap.timeline({ scrollTrigger: { trigger: moment, start: 'top 85%', end: 'top 39%', scrub: .45 } })
-      .from(moment.querySelector('.moment-index'), { opacity: 0, x: -16, ease: 'power2.out' }, 0)
-      .from(moment.querySelector('h3'), { opacity: 0, y: 35, scaleY: .96, transformOrigin: '50% 100%', ease: 'power3.out' }, .12)
-      .from(moment.querySelector('p'), { opacity: 0, y: 18, ease: 'power2.out' }, .3);
+  const routeTimeline = gsap.timeline({ scrollTrigger: { trigger: '.moments', start: 'top 78%', end: 'top 28%', scrub: .6 } });
+  routeTimeline.fromTo(momentsRoute, { strokeDasharray: routeLength, strokeDashoffset: routeLength }, { strokeDashoffset: 0, duration: 1, ease: 'none' }, 0);
+  routeStops.forEach((stop, index) => {
+    const at = [.09, .47, .88][index];
+    routeTimeline.fromTo(stop, { opacity: 0, scale: .4, transformOrigin: 'center' }, { opacity: 1, scale: 1, duration: .12, ease: 'power2.out' }, at);
+    routeTimeline.from(moments[index].querySelector('.moment-index'), { opacity: 0, y: 16, duration: .15, ease: 'power2.out' }, at);
+    routeTimeline.from(moments[index].querySelector('h3'), { opacity: 0, y: 26, scaleY: .97, transformOrigin: '50% 100%', duration: .19, ease: 'power3.out' }, at + .03);
+    routeTimeline.from(moments[index].querySelector('p'), { opacity: 0, y: 14, duration: .18, ease: 'power2.out' }, at + .08);
   });
   gsap.from('.engagement-terms > div', {
     opacity: 0, y: 22, duration: .85, stagger: .16, ease: 'power3.out',
@@ -90,7 +132,7 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   gsap.timeline({ scrollTrigger: { trigger: '.engagement', start: 'top 80%', end: 'top 30%', scrub: .5 } })
     .from('.engagement-art-frame', { opacity: 0, scale: .9, ease: 'power2.out', duration: .8 }, 0)
     .from('.engagement-art-frame img', { opacity: 0, scale: .7, rotation: -8, ease: 'power2.out', duration: .65 }, .4);
-  for (const [selector, trigger] of [['.practice-route path', '.practice'], ['.moments-route path', '.moments'], ['.route-symbol-main', '.engagement']]) {
+  for (const [selector, trigger] of [['.practice-route path', '.practice'], ['.route-symbol-main', '.engagement']]) {
     const path = document.querySelector(selector);
     const length = path.getTotalLength();
     gsap.fromTo(path, { strokeDasharray: length, strokeDashoffset: length }, {
@@ -98,7 +140,6 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
       scrollTrigger: { trigger, start: 'top 78%', end: 'top 30%', scrub: .55 }
     });
   }
-  gsap.from('.moments-route circle', { opacity: 0, scale: .2, transformOrigin: 'center', stagger: .12, duration: .7, ease: 'back.out(1.6)', scrollTrigger: { trigger: '.moments', start: 'top 55%' } });
 } else {
   const updateProgress = () => {
     const length = Math.max(1, story.offsetHeight - innerHeight);
