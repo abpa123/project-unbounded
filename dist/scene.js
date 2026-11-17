@@ -12,9 +12,10 @@ function updateNavigation() {
   header.classList.toggle('is-scrolled', window.scrollY > 90);
   const capabilitiesRect = document.getElementById('capabilities').getBoundingClientRect();
   const capabilitiesVisible = capabilitiesRect.top < innerHeight * .55 && capabilitiesRect.bottom > 80;
-  const practiceVisible = document.getElementById('practice').getBoundingClientRect().top < innerHeight * .55;
-  header.classList.toggle('on-capabilities', practiceVisible);
-  const active = capabilitiesVisible ? '#capabilities' : practiceVisible ? '' : document.getElementById('approach').getBoundingClientRect().top < innerHeight * .52 ? '#approach' : '';
+  const practiceRect = document.getElementById('practice').getBoundingClientRect();
+  const practiceVisible = practiceRect.top < innerHeight * .55 && practiceRect.bottom > 80;
+  header.classList.toggle('on-capabilities', practiceRect.top < innerHeight * .55);
+  const active = capabilitiesVisible ? '#capabilities' : practiceVisible ? '#practice' : document.getElementById('approach').getBoundingClientRect().top < innerHeight * .52 ? '#approach' : '';
   document.querySelectorAll('.site-header nav a').forEach(link => link.classList.toggle('is-active', link.getAttribute('href') === active));
 }
 addEventListener('scroll', updateNavigation, { passive: true });
@@ -37,7 +38,8 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
 
   const hero = document.querySelector('.hero');
   gsap.timeline({ defaults: { ease: 'power3.out' } })
-    .from(hero.querySelector('.eyebrow'), { opacity: 0, x: -16, duration: .75 })
+    .from(hero.querySelector('.story-rule'), { scaleX: 0, duration: 1.05 })
+    .from(hero.querySelector('.eyebrow'), { opacity: 0, x: -16, duration: .75 }, '-=.75')
     .from(hero.querySelectorAll('.type-line'), { opacity: 0, y: 42, rotationX: -8, scaleY: .97, transformOrigin: '50% 100%', stagger: .13, duration: 1.1 }, '-=.4')
     .from(hero.querySelector('.lede'), { opacity: 0, y: 18, duration: .85 }, '-=.55')
     .from(hero.querySelector('.explore-button'), { opacity: 0, y: 20, scale: .96, duration: .8 }, '-=.48');
@@ -90,25 +92,9 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
     opacity: 0, y: 12, duration: .65, stagger: .1, ease: 'power2.out',
     scrollTrigger: { trigger: '.site-footer', start: 'top 95%' }
   });
-  const illustration = document.querySelector('.engagement-illustration');
-  const illustrationReveal = gsap.timeline({
-    scrollTrigger: { trigger: '.engagement', start: 'top 78%', end: 'top 31%', scrub: .55 }
-  });
-  for (const [selector, start, duration] of [
-    ['.illustration-outline', 0, 1],
-    ['.illustration-ear', .14, .5],
-    ['.illustration-mane', .34, .7],
-    ['.illustration-features', .72, .42]
-  ]) {
-    const path = illustration.querySelector(selector);
-    const length = path.getTotalLength();
-    illustrationReveal.fromTo(path,
-      { strokeDasharray: length, strokeDashoffset: length },
-      { strokeDashoffset: 0, duration, ease: 'none' }, start);
-  }
-  illustrationReveal.from(illustration.querySelector('.illustration-horn'), {
-    opacity: 0, scale: .8, transformOrigin: '70% 80%', duration: .42, ease: 'power2.out'
-  }, .38);
+  gsap.timeline({ scrollTrigger: { trigger: '.engagement', start: 'top 80%', end: 'top 30%', scrub: .5 } })
+    .from('.engagement-art-frame', { clipPath: 'inset(0 100% 0 0)', ease: 'none', duration: 1 }, 0)
+    .from('.engagement-art-frame img', { opacity: 0, scale: .8, rotation: -8, ease: 'power2.out', duration: .65 }, .28);
 } else {
   const updateProgress = () => {
     const length = Math.max(1, story.offsetHeight - innerHeight);
@@ -116,15 +102,6 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   };
   addEventListener('scroll', updateProgress, { passive: true });
   updateProgress();
-}
-
-const exploreButton = document.querySelector('.explore-button');
-if (!reducedMotion && matchMedia('(pointer: fine)').matches) {
-  exploreButton.addEventListener('pointermove', event => {
-    const bounds = exploreButton.getBoundingClientRect();
-    exploreButton.style.setProperty('--fill-x', `${((event.clientX - bounds.left) / bounds.width * 100).toFixed(1)}%`);
-  });
-  exploreButton.addEventListener('pointerleave', () => exploreButton.style.removeProperty('--fill-x'));
 }
 
 // All positions are deterministic so the same trail remains recognizable on return visits.
