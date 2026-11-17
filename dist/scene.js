@@ -9,7 +9,7 @@ const clamp = THREE.MathUtils.clamp;
 
 function updateNavigation() {
   const header = document.querySelector('.site-header');
-  header.classList.toggle('is-scrolled', window.scrollY > 45);
+  header.classList.toggle('is-scrolled', window.scrollY > 90);
   const capabilitiesRect = document.getElementById('capabilities').getBoundingClientRect();
   const capabilitiesVisible = capabilitiesRect.top < innerHeight * .55 && capabilitiesRect.bottom > 80;
   const practiceVisible = document.getElementById('practice').getBoundingClientRect().top < innerHeight * .55;
