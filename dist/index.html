@@ -3,59 +3,62 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f4f1e9">
+  <meta name="theme-color" content="#f7fbff">
   <meta name="description" content="Project U brings proven AI into the workflows that run your business.">
   <title>Project U — Beyond the pilot</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="preload" href="fonts/cormorant-garamond.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/epilogue.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
+    <a class="wordmark" href="#top" aria-label="Project U home">Project <em>U</em></a>
     <nav aria-label="Main navigation"><a href="#approach">Approach</a><a href="#capabilities">What we build</a></nav>
-    <a class="wordmark" href="#top" aria-label="Project U home"><span>PROJECT U</span><small>PROJECT UNBOUNDED</small></a>
-    <a class="header-link" href="#approach">Explore <span aria-hidden="true">↗</span></a>
   </header>
-  <div class="scene-stage" aria-hidden="true"><img class="scene-fallback" src="fallback.svg" alt=""><div class="scene-canvas" id="scene-canvas"></div><div class="map-status"><span class="map-status-eyebrow">THE ROUTE <b id="map-number">01 / 04</b></span><strong id="map-title">Set the course</strong><span id="map-description">Beyond the pilot</span></div></div>
-  <div class="route-indicator" aria-hidden="true"><span class="route-indicator-track"><span id="route-indicator-fill"></span></span><span class="route-indicator-tip" id="route-indicator-tip"></span></div>
+  <div class="scene-stage" aria-hidden="true">
+    <img class="scene-fallback" src="fallback.png" alt="">
+    <div class="scene-canvas" id="scene-canvas"></div>
+  </div>
   <main id="main">
     <div class="story" id="top">
       <section class="story-panel hero" aria-labelledby="hero-title">
+        <div class="story-rule" aria-hidden="true"></div>
         <div class="story-copy">
-          <p class="section-kicker">AI IMPLEMENTATION</p>
-          <h1 id="hero-title"><span class="mask"><span>Beyond</span></span><span class="mask"><span>the pilot</span></span></h1>
+          <p class="eyebrow">Project Unbounded</p>
+          <h1 id="hero-title"><span class="type-line">Beyond</span><span class="type-line">the <em>pilot</em></span></h1>
           <p class="lede">Project U brings proven AI into the workflows that run your business.</p>
-          <a class="text-action" href="#approach">Follow the route <span aria-hidden="true">↗</span></a>
+          <a class="explore-button" href="#approach"><span class="button-label">See how we work</span><span class="button-mark" aria-hidden="true"><svg viewBox="0 0 42 42" fill="none"><path d="M8 31c4-3 1-9 7-10s5 5 10 3 2-9 9-13"/><circle cx="8" cy="31" r="2"/><circle cx="34" cy="11" r="2"/></svg></span></a>
         </div>
-        <span class="scroll-note">Scroll to follow the route <span aria-hidden="true">↓</span></span>
       </section>
       <section class="story-panel" id="approach" aria-labelledby="approach-title">
+        <div class="story-rule" aria-hidden="true"></div>
         <div class="story-copy">
-          <p class="section-kicker">THE APPROACH</p>
-          <h2 id="approach-title"><span class="mask"><span>Start with</span></span><span class="mask"><span>the work</span></span></h2>
+          <p class="eyebrow">The approach</p>
+          <h2 id="approach-title"><span class="type-line">Start with</span><span class="type-line">the work</span></h2>
           <p class="lede">We map the routine, find the friction, and choose the right place for AI.</p>
         </div>
       </section>
       <section class="story-panel" aria-labelledby="connect-title">
+        <div class="story-rule" aria-hidden="true"></div>
         <div class="story-copy">
-          <p class="section-kicker">THE CONNECTION</p>
-          <h2 id="connect-title"><span class="mask"><span>Link what</span></span><span class="mask"><span>matters</span></span></h2>
+          <p class="eyebrow">Making connections</p>
+          <h2 id="connect-title"><span class="type-line">Link what</span><span class="type-line">matters</span></h2>
           <p class="lede">Your people, tools, and information begin working together.</p>
         </div>
       </section>
       <section class="story-panel" aria-labelledby="embed-title">
+        <div class="story-rule" aria-hidden="true"></div>
         <div class="story-copy">
-          <p class="section-kicker">THE RESULT</p>
-          <h2 id="embed-title"><span class="mask"><span>Make it</span></span><span class="mask"><span>everyday</span></span></h2>
+          <p class="eyebrow">The result</p>
+          <h2 id="embed-title"><span class="type-line">Make it</span><span class="type-line">everyday</span></h2>
           <p class="lede">We deploy, train your team, and keep improving the system.</p>
         </div>
       </section>
     </div>
     <section class="capabilities" id="capabilities" aria-labelledby="capabilities-title">
-      <div class="capabilities-heading"><p class="section-kicker">WHAT WE BUILD</p><h2 id="capabilities-title">Useful from day one</h2><p>Practical systems for the moments that move a business.</p></div>
+      <div class="capabilities-heading"><p class="eyebrow">What we build</p><h2 id="capabilities-title">Useful from day one</h2></div>
       <div class="service-list">
         <div><span>01</span><h3>Connected systems</h3><p>AI across your email, calendars, documents, and internal tools.</p></div>
         <div><span>02</span><h3>AI front desk</h3><p>Answers, lead qualification, booking, and human handoff.</p></div>
@@ -66,7 +69,7 @@
       </div>
     </section>
   </main>
-  <footer class="site-footer"><span>PROJECT U</span><span>PROJECT UNBOUNDED</span><a href="#top">Back to top ↑</a></footer>
+  <footer class="site-footer"><span>Project U</span><a href="#top">Back to top</a></footer>
   <script src="vendor/gsap.min.js"></script>
   <script src="vendor/ScrollTrigger.min.js"></script>
   <script type="module" src="scene.js"></script>
