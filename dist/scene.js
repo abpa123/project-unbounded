@@ -149,14 +149,15 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
       scrollTrigger: { trigger: row, start: 'top 90%', once: true }
     });
   });
-  const routeTimeline = gsap.timeline({ scrollTrigger: { trigger: '.moments', start: 'top 78%', end: 'top 28%', scrub: .6 } });
+  const routeTimeline = gsap.timeline({ scrollTrigger: { trigger: '.moments', start: 'top 70%', end: 'top -15%', scrub: 2.4 } });
   routeTimeline.fromTo(momentsRoute, { strokeDasharray: routeLength, strokeDashoffset: routeLength }, { strokeDashoffset: 0, duration: 1, ease: 'none' }, 0);
   routeStops.forEach((stop, index) => {
     const at = [.09, .47, .88][index];
     routeTimeline.fromTo(stop, { opacity: 0, scale: .4, transformOrigin: 'center' }, { opacity: 1, scale: 1, duration: .12, ease: 'power2.out' }, at);
-    routeTimeline.from(moments[index].querySelector('.moment-index'), { opacity: 0, y: 16, duration: .15, ease: 'power2.out' }, at);
-    routeTimeline.from(moments[index].querySelector('h3'), { opacity: 0, y: 26, scaleY: .97, transformOrigin: '50% 100%', duration: .19, ease: 'power3.out' }, at + .03);
-    routeTimeline.from(moments[index].querySelector('p'), { opacity: 0, y: 14, duration: .18, ease: 'power2.out' }, at + .08);
+  });
+  gsap.from(moments, {
+    opacity: 0, y: 18, duration: .85, stagger: .16, ease: 'power2.out',
+    scrollTrigger: { trigger: '.moments-grid', start: 'top 90%', once: true }
   });
   gsap.from('.engagement-terms > div', {
     opacity: 0, y: 22, duration: .85, stagger: .16, ease: 'power3.out',
