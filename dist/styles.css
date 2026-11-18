@@ -252,6 +252,13 @@ section[id] { scroll-margin-top: 100px; }
   .site-footer a { grid-row: 1; grid-column: 2; }
 }
 
+@media (min-width: 601px) and (max-width: 850px) {
+  .scene-stage { top: max(550px, 68svh); }
+  .story-panel, .story-panel:nth-child(n) {
+    background: linear-gradient(180deg, var(--paper) 0%, var(--paper) 60%, rgba(247, 251, 253, .96) 68%, transparent 79%);
+  }
+}
+
 @media (max-width: 380px) {
   .site-header nav a:nth-child(3) { display: none; }
   .site-header nav { gap: 12px; }
