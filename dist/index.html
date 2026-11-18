@@ -20,10 +20,11 @@
     <a class="wordmark" href="#top" aria-label="Project Unbounded home"><span class="wordmark-full"><span>Project</span><em>Unbounded</em></span><span class="wordmark-compact"><span>Project</span><img class="brand-mark" src="mark-small.svg?v=u-placeholder" alt=""></span></a>
     <nav aria-label="Main navigation"><a href="#approach">Approach</a><a href="#practice">Who it's for</a><a href="#capabilities">What we build</a><span class="nav-indicator" aria-hidden="true"></span></nav>
   </header>
-  <div class="scene-stage" aria-hidden="true">
-    <img class="scene-fallback" src="fallback.png" alt="">
-    <div class="scene-canvas" id="scene-canvas"></div>
-    <div class="scene-vignette"></div>
+  <div class="scene-stage">
+    <img class="scene-fallback" src="fallback.png" alt="" aria-hidden="true">
+    <div class="scene-canvas" id="scene-canvas" aria-hidden="true"></div>
+    <div class="scene-vignette" aria-hidden="true"></div>
+    <button class="chest-hint" type="button" hidden><span class="chest-hint-dot" aria-hidden="true"></span>Open the chest</button>
   </div>
   <main id="main">
     <div class="story" id="top">
@@ -39,6 +40,7 @@
           <p class="eyebrow">The approach</p>
           <h2 id="approach-title"><span class="type-line">Find the slow</span><span class="type-line">handoffs</span></h2>
           <p class="lede">We start with the work itself: missed calls, manual scheduling, scattered information, and the handoffs that leave customers waiting.</p>
+          <p class="stop-cue"><span aria-hidden="true"></span>Something's waiting on the trail. Open the chest to see what we find.</p>
         </div>
       </section>
       <section class="story-panel" aria-labelledby="connect-title">
@@ -102,6 +104,24 @@
       <div class="engagement-terms"><div><span class="term-number">01</span><h3>Install</h3><p>Map the work, connect the tools, train the team.</p></div><div><span class="term-number">02</span><h3>Improve</h3><p>Maintain, refine, and expand what works.</p></div></div>
     </section>
   </main>
+  <div class="treasure" id="treasure" role="dialog" aria-modal="true" aria-labelledby="treasure-title" hidden>
+    <div class="treasure-glow" aria-hidden="true"></div>
+    <button class="treasure-close" type="button" aria-label="Close">Close<span aria-hidden="true"></span></button>
+    <div class="treasure-inner">
+      <p class="treasure-eyebrow" data-reveal>The first find</p>
+      <h2 id="treasure-title" data-reveal>Where the<br><em>friction hides.</em></h2>
+      <p class="treasure-lede" data-reveal>Every engagement starts with a walk through your week. We sit with the people doing the work, follow a request from first call to finished job, and mark every place it stalls.</p>
+      <div class="treasure-finds">
+        <div data-reveal><span>01</span><h3>Missed calls</h3><p>After-hours and busy-hour calls that never become a booking or a follow-up.</p></div>
+        <div data-reveal><span>02</span><h3>Manual scheduling</h3><p>Back-and-forth messages, double entry, and reminders someone has to remember to send.</p></div>
+        <div data-reveal><span>03</span><h3>Scattered information</h3><p>Details split across inboxes, notes, and spreadsheets, so every handoff starts with a search.</p></div>
+      </div>
+      <div class="treasure-foot" data-reveal>
+        <p>You leave with a short map of the friction we found and the one fix worth building first.</p>
+        <button class="treasure-next" type="button">Continue the trail</button>
+      </div>
+    </div>
+  </div>
   <footer class="site-footer"><div class="footer-main"><span class="footer-brand">Project Unbounded</span><div class="footer-meta"><span>South Bay, California</span><a href="#top" class="footer-return">Back to top</a></div></div></footer>
   <script src="vendor/gsap.min.js"></script>
   <script src="vendor/ScrollTrigger.min.js"></script>
