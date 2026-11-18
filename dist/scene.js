@@ -1096,3 +1096,50 @@ document.addEventListener('keydown', event => {
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
   }
 });
+
+const trailScroll = document.querySelector('.trail-scroll');
+const trailNote = document.getElementById('trail-note');
+const trailNoteSheet = trailNote?.querySelector('.trail-note-sheet');
+let trailNoteClosing = false;
+function updateTrailScroll() {
+  const rect = panels[2].getBoundingClientRect();
+  const visible = rect.top < innerHeight * .54 && rect.bottom > innerHeight * .34;
+  const canShow = visible && trailNote.hidden && treasure.hidden;
+  trailScroll.classList.toggle('is-visible', canShow);
+  trailScroll.inert = !canShow;
+}
+function openTrailNote() {
+  if (!trailNote.hidden) return;
+  trailNote.hidden = false;
+  trailNote.scrollTop = 0;
+  document.body.classList.add('trail-note-open');
+  updateTrailScroll();
+  if (animate) {
+    gsap.fromTo(trailNote, { opacity: 0 }, { opacity: 1, duration: .35, ease: 'power2.out' });
+    gsap.fromTo(trailNoteSheet, { opacity: .5, scale: .78, y: -70 }, { opacity: 1, scale: 1, y: 0, duration: .7, ease: 'power3.out' });
+  }
+  trailNote.querySelector('.trail-note-close').focus({ preventScroll: true });
+}
+function closeTrailNote() {
+  if (trailNote.hidden || trailNoteClosing) return;
+  trailNoteClosing = true;
+  const finish = () => {
+    trailNote.hidden = true;
+    document.body.classList.remove('trail-note-open');
+    trailNoteClosing = false;
+    updateTrailScroll();
+    trailScroll.focus({ preventScroll: true });
+  };
+  if (animate) gsap.to(trailNote, { opacity: 0, duration: .24, ease: 'power2.in', onComplete: finish });
+  else finish();
+}
+trailScroll.addEventListener('click', openTrailNote);
+trailNote.querySelector('.trail-note-close').addEventListener('click', closeTrailNote);
+addEventListener('scroll', updateTrailScroll, { passive: true });
+addEventListener('resize', updateTrailScroll, { passive: true });
+document.addEventListener('keydown', event => {
+  if (trailNote.hidden) return;
+  if (event.key === 'Escape') { event.preventDefault(); closeTrailNote(); }
+  if (event.key === 'Tab') { event.preventDefault(); trailNote.querySelector('.trail-note-close').focus(); }
+});
+updateTrailScroll();
