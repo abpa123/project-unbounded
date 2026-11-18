@@ -381,6 +381,9 @@ body.treasure-open { overflow: hidden; }
 
 /* Keep the trail interactive while its decorative layers remain transparent to input. */
 .scene-canvas, .chest-hint { pointer-events: auto; }
+.scene-stage { pointer-events: auto; }
+.story { pointer-events: none; }
+.story-copy { pointer-events: auto; }
 .chest-hint { padding: 10px 14px; border-color: rgba(40, 126, 183, .5); border-radius: 4px; background: #f8fcff; color: var(--ink); box-shadow: 0 7px 20px rgba(20, 59, 85, .14); backdrop-filter: none; font-size: 14px; animation: none; }
 .chest-hint:hover { background: #e8f4fb; border-color: var(--accent); }
 .chest-hint:focus-visible { outline-color: var(--accent); }
