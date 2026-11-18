@@ -5,6 +5,18 @@ const story = document.querySelector('.story');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const motion = { progress: 0 };
 const clamp = THREE.MathUtils.clamp;
+const panels = [...document.querySelectorAll('.story-panel')];
+const CHEST_STOP = 1;
+const chestState = { reveal: 0, hover: 0, lid: 0, burst: 0, opened: false };
+let stops = [0, .25, .5, .75];
+let activeStop = -1;
+let siteLenis = null;
+const animate = !reducedMotion && !!window.gsap;
+function measureStops() { const range = Math.max(1, story.scrollHeight - innerHeight); stops = panels.map(panel => clamp(panel.offsetTop / range, 0, 1)); }
+function updateChestStop() { activeStop = stops.reduce((best, stop, i) => Math.abs(stop - motion.progress) < Math.abs(stops[best] - motion.progress) ? i : best, 0); if (activeStop === CHEST_STOP && chestState.reveal === 0) { if (animate) gsap.to(chestState, { reveal: 1, duration: 1, ease: 'back.out(1.5)' }); else chestState.reveal = 1; } }
+addEventListener('resize', measureStops);
+addEventListener('scroll', updateChestStop, { passive: true });
+measureStops();
 const header = document.querySelector('.site-header');
 const nav = header.querySelector('nav');
 const navLinks = [...nav.querySelectorAll('a')];
@@ -111,6 +123,7 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   document.fonts?.ready.then(() => ScrollTrigger.refresh());
   if (window.Lenis) {
     const lenis = new Lenis({ lerp: .16, wheelMultiplier: 1.12, anchors: true });
+    siteLenis = lenis;
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add(time => lenis.raf(time * 1000));
     gsap.ticker.lagSmoothing(0);
@@ -821,7 +834,152 @@ try {
   fallenLogs.instanceMatrix.needsUpdate = true;
   scene.add(fallenLogs);
 
+  // The first stop's find: a treasure chest that rises out of the trail ahead, glowing gold.
+  let chestStopZ = 12 - stops[CHEST_STOP] * 92;
+  let chestZ = chestStopZ - 4.4;
+  let chestX = pathX(chestZ) + .15;
+  let chestY = trailHeight(chestZ) + .02;
+  const chest = new THREE.Group();
+  chest.position.set(chestX, chestY, chestZ);
+  chest.rotation.y = Math.atan2(pathX(chestStopZ) - chestX, chestStopZ - chestZ);
+  chest.scale.setScalar(.0001);
+  scene.add(chest);
+  const chestBody = new THREE.Group();
+  chest.add(chestBody);
+  const woodMaterial = new THREE.MeshStandardMaterial({ color: '#2e5b80', roughness: .72, metalness: .05 });
+  const woodDarkMaterial = new THREE.MeshStandardMaterial({ color: '#21476a', roughness: .8, metalness: .05 });
+  const goldMaterial = new THREE.MeshStandardMaterial({ color: '#d7ae73', emissive: '#a57539', emissiveIntensity: .12, roughness: .78, metalness: .08 });
+  const treasureMaterial = new THREE.MeshStandardMaterial({ color: '#e6cda6', roughness: .88 });
+  const W = .92, D = .6, H = .46, R = D / 2;
+  const box = (w, h, d, material, x, y, z) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+    mesh.position.set(x, y, z);
+    return mesh;
+  };
+  chestBody.add(box(W, H, D, woodMaterial, 0, H / 2, 0));
+  chestBody.add(box(W + .03, .06, D + .03, woodDarkMaterial, 0, .03, 0));
+  for (const x of [-W / 2 + .1, W / 2 - .1]) chestBody.add(box(.07, H + .01, D + .025, goldMaterial, x, H / 2, 0));
+  chestBody.add(box(W + .02, .05, D + .02, goldMaterial, 0, H - .03, 0));
+  chestBody.add(box(.14, .17, .05, goldMaterial, 0, H - .09, D / 2 + .02));
+  chestBody.add(box(W - .08, .02, D - .08, treasureMaterial, 0, H - .015, 0));
+  const lidPivot = new THREE.Group();
+  lidPivot.position.set(0, H, -D / 2);
+  chest.add(lidPivot);
+  const lidGeometry = new THREE.CylinderGeometry(R, R, W, 20, 1, false, 0, Math.PI);
+  lidGeometry.rotateZ(Math.PI / 2);
+  const lid = new THREE.Mesh(lidGeometry, woodMaterial);
+  lid.position.set(0, 0, R);
+  lidPivot.add(lid);
+  for (const x of [-W / 2 + .1, W / 2 - .1]) {
+    const bandGeometry = new THREE.CylinderGeometry(R + .012, R + .012, .07, 20, 1, false, 0, Math.PI);
+    bandGeometry.rotateZ(Math.PI / 2);
+    const band = new THREE.Mesh(bandGeometry, goldMaterial);
+    band.position.set(x, 0, R);
+    lidPivot.add(band);
+  }
+  const lidClasp = box(.1, .12, .04, goldMaterial, 0, .02, D + .015);
+  lidPivot.add(lidClasp);
+
+  const glowCanvas = document.createElement('canvas');
+  glowCanvas.width = glowCanvas.height = 128;
+  const glowContext = glowCanvas.getContext('2d');
+  const glowGradient = glowContext.createRadialGradient(64, 64, 0, 64, 64, 64);
+  glowGradient.addColorStop(0, 'rgba(255, 234, 199, .65)');
+  glowGradient.addColorStop(.25, 'rgba(241, 208, 162, .22)');
+  glowGradient.addColorStop(1, 'rgba(241, 208, 162, 0)');
+  glowContext.fillStyle = glowGradient;
+  glowContext.fillRect(0, 0, 128, 128);
+  const glowTexture = new THREE.CanvasTexture(glowCanvas);
+  glowTexture.colorSpace = THREE.SRGBColorSpace;
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false, toneMapped: false }));
+  glow.position.set(0, .4, 0);
+  chest.add(glow);
+  const chestLight = new THREE.PointLight('#e4c49b', 0, 3.2, 1.8);
+  chestLight.position.set(0, .9, .2);
+  chest.add(chestLight);
+
+  const chestHint = document.querySelector('.chest-hint');
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+  const hitChest = event => {
+    if (chestState.reveal < .6 || chestState.opened) return false;
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1);
+    raycaster.setFromCamera(pointer, camera);
+    return raycaster.intersectObject(chest, true).length > 0;
+  };
+  let hovering = false;
+  renderer.domElement.addEventListener('pointermove', event => {
+    hovering = hitChest(event);
+    renderer.domElement.style.cursor = hovering ? 'pointer' : '';
+  });
+  renderer.domElement.addEventListener('pointerleave', () => { hovering = false; renderer.domElement.style.cursor = ''; });
+  const openChest = (x, y) => {
+    if (chestState.opened) return;
+    chestState.opened = true;
+    hovering = false;
+    renderer.domElement.style.cursor = '';
+    if (animate) {
+      gsap.to(chestState, { lid: 1, duration: .7, ease: 'back.out(1.4)' });
+      gsap.fromTo(chestState, { burst: 1.4 }, { burst: 0, duration: 1.4, ease: 'power2.out' });
+      gsap.delayedCall(.45, () => openTreasure(x, y));
+    } else {
+      chestState.lid = 1;
+      openTreasure(x, y);
+    }
+  };
+  renderer.domElement.addEventListener('click', event => { if (hitChest(event)) openChest(event.clientX, event.clientY); });
+  chestHint?.addEventListener('click', () => {
+    const rect = chestHint.getBoundingClientRect();
+    openChest(rect.left + rect.width / 2, rect.top + rect.height / 2);
+  });
+  document.addEventListener('treasure:closed', () => {
+    chestState.opened = false;
+    if (animate) gsap.to(chestState, { lid: 0, duration: .8, ease: 'power2.inOut' });
+    else chestState.lid = 0;
+  });
+  const projected = new THREE.Vector3();
+  function updateChest(time) {
+    const reveal = chestState.reveal;
+    chestState.hover += ((hovering ? 1 : 0) - chestState.hover) * .12;
+    chest.visible = reveal > .001;
+    if (!chest.visible) { if (chestHint) chestHint.hidden = true; return; }
+    const pulse = .5 + .5 * Math.sin(time * 2.4);
+    chest.scale.setScalar(Math.max(.0001, reveal) * (1 + chestState.hover * .05));
+    chest.position.y = chestY - (1 - Math.min(reveal, 1)) * .5;
+    chestBody.rotation.z = chestState.hover * Math.sin(time * 18) * .012;
+    lidPivot.rotation.x = -(chestState.lid * 1.85 + chestState.hover * .16 * (1 - chestState.lid));
+    const glowStrength = Math.min(reveal, 1) * (.28 + pulse * .06 + chestState.hover * .1 + chestState.burst * .28 + chestState.lid * .16);
+    glow.scale.setScalar(1.35 + chestState.hover * .2 + chestState.burst * .5 + chestState.lid * .25);
+    glow.material.opacity = clamp(glowStrength, 0, .48);
+    chestLight.intensity = glowStrength * 1.3;
+    goldMaterial.emissiveIntensity = .12 + chestState.hover * .06 + chestState.burst * .1;
+    if (chestHint) {
+      projected.set(chestX, chestY + 1.05, chestZ).project(camera);
+      const show = activeStop === CHEST_STOP && reveal > .8 && !chestState.opened && projected.z < 1 && Math.abs(projected.x) < 1.1;
+      chestHint.hidden = !show;
+      if (show) {
+        chestHint.style.left = `${(projected.x * .5 + .5) * stage.clientWidth}px`;
+        chestHint.style.top = `${(-projected.y * .5 + .5) * stage.clientHeight}px`;
+      }
+    }
+  }
+  const lookTarget = new THREE.Vector3();
+  const chestFocus = new THREE.Vector3(chestX, chestY + .3, chestZ);
+
+  function placeChest() {
+    chestStopZ = 12 - stops[CHEST_STOP] * 92;
+    chestZ = chestStopZ - 4.4;
+    chestX = pathX(chestZ) + .15;
+    chestY = trailHeight(chestZ) + .02;
+    chest.position.set(chestX, chestY, chestZ);
+    chest.rotation.y = Math.atan2(pathX(chestStopZ) - chestX, chestStopZ - chestZ);
+    chestFocus.set(chestX, chestY + .3, chestZ);
+  }
+  document.fonts?.ready.then(() => { measureStops(); placeChest(); });
+
   function resize() {
+    placeChest();
     const width = Math.max(1, stage.clientWidth), height = Math.max(1, stage.clientHeight);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
@@ -859,7 +1017,11 @@ try {
     const x = pathX(z);
     const stride = reducedMotion ? 0 : Math.sin(progress * 400) * walkingEnergy;
     camera.position.set(x + stride * .012, 1.77 + walkHeight(z) + stride * .018, z);
-    camera.lookAt(pathX(z - 10), 1.66 + walkHeight(z - 10), z - 10);
+    const nearChest = 1 - clamp(Math.abs(progress - stops[CHEST_STOP]) / .09, 0, 1);
+    const focus = nearChest * nearChest * (3 - 2 * nearChest) * .72;
+    lookTarget.set(pathX(z - 10), 1.66 + walkHeight(z - 10), z - 10).lerp(chestFocus, focus);
+    camera.lookAt(lookTarget);
+    updateChest(performance.now() * .001);
     sun.position.set(x - 13, 21, z + 8);
     sun.target.position.set(x, 0, z - 10);
     sun.target.updateMatrixWorld();
@@ -889,5 +1051,60 @@ try {
   new IntersectionObserver(queueRender).observe(story);
   queueRender();
 } catch (error) {
+  document.body.classList.add('webgl-unavailable');
   console.warn('Forest scene unavailable:', error);
 }
+
+const treasure = document.getElementById('treasure');
+let treasureOrigin = { x: innerWidth * .8, y: innerHeight * .6 };
+let treasureReturnFocus = null;
+function openTreasure(x, y) {
+  if (!treasure || !treasure.hidden) return;
+  treasureOrigin = { x, y };
+  treasureReturnFocus = document.activeElement === document.body ? document.querySelector('.chest-hint') : document.activeElement;
+  treasure.hidden = false;
+  document.body.classList.add('treasure-open');
+  siteLenis?.stop();
+  const items = treasure.querySelectorAll('[data-reveal]');
+  if (animate) {
+    gsap.fromTo(treasure, { clipPath: `circle(0px at ${x}px ${y}px)` }, { clipPath: `circle(150% at ${x}px ${y}px)`, duration: 1, ease: 'power3.inOut' });
+    gsap.fromTo(items, { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: .8, stagger: .08, ease: 'power3.out', delay: .45 });
+  } else {
+    treasure.style.clipPath = 'none';
+  }
+  treasure.querySelector('.treasure-close').focus({ preventScroll: true });
+}
+function closeTreasure(next) {
+  if (!treasure || treasure.hidden) return;
+  const finish = () => {
+    treasure.hidden = true;
+    document.body.classList.remove('treasure-open');
+    siteLenis?.start();
+    document.dispatchEvent(new CustomEvent('treasure:closed'));
+    if (next) {
+      const top = story.offsetTop + panels[CHEST_STOP + 1].offsetTop;
+      if (siteLenis) siteLenis.scrollTo(top, { duration: 1.6 });
+      else scrollTo({ top, behavior: reducedMotion ? 'auto' : 'smooth' });
+    } else treasureReturnFocus?.focus?.({ preventScroll: true });
+  };
+  if (animate) {
+    const { x, y } = treasureOrigin;
+    gsap.to(treasure, { clipPath: `circle(0px at ${x}px ${y}px)`, duration: .75, ease: 'power3.inOut', onComplete: finish });
+  } else finish();
+}
+treasure?.querySelector('.treasure-close').addEventListener('click', () => closeTreasure(false));
+treasure?.querySelector('.treasure-next').addEventListener('click', () => closeTreasure(true));
+document.querySelector('.chest-fallback-action')?.addEventListener('click', event => {
+  const { left, top, width, height } = event.currentTarget.getBoundingClientRect();
+  openTreasure(left + width / 2, top + height / 2);
+});
+document.addEventListener('keydown', event => {
+  if (!treasure || treasure.hidden) return;
+  if (event.key === 'Escape') { event.preventDefault(); closeTreasure(false); }
+  if (event.key === 'Tab') {
+    const focusable = [...treasure.querySelectorAll('button, a[href]')];
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  }
+});
