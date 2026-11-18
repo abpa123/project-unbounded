@@ -850,7 +850,7 @@ try {
   const woodDarkMaterial = new THREE.MeshStandardMaterial({ color: '#21476a', roughness: .8, metalness: .05 });
   const goldMaterial = new THREE.MeshStandardMaterial({ color: '#d7ae73', emissive: '#a57539', emissiveIntensity: .12, roughness: .78, metalness: .08 });
   const treasureMaterial = new THREE.MeshStandardMaterial({ color: '#e6cda6', roughness: .88 });
-  const W = .92, D = .6, H = .46, R = D / 2;
+  const W = .92, D = .6, H = .46;
   const box = (w, h, d, material, x, y, z) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
     mesh.position.set(x, y, z);
@@ -865,19 +865,12 @@ try {
   const lidPivot = new THREE.Group();
   lidPivot.position.set(0, H, -D / 2);
   chest.add(lidPivot);
-  const lidGeometry = new THREE.CylinderGeometry(R, R, W, 20, 1, false, 0, Math.PI);
-  lidGeometry.rotateZ(Math.PI / 2);
-  const lid = new THREE.Mesh(lidGeometry, woodMaterial);
-  lid.position.set(0, 0, R);
-  lidPivot.add(lid);
+  lidPivot.add(box(W + .04, .13, D + .04, woodMaterial, 0, .065, D / 2));
+  lidPivot.add(box(W - .12, .012, D - .13, woodDarkMaterial, 0, .137, D / 2));
   for (const x of [-W / 2 + .1, W / 2 - .1]) {
-    const bandGeometry = new THREE.CylinderGeometry(R + .012, R + .012, .07, 20, 1, false, 0, Math.PI);
-    bandGeometry.rotateZ(Math.PI / 2);
-    const band = new THREE.Mesh(bandGeometry, goldMaterial);
-    band.position.set(x, 0, R);
-    lidPivot.add(band);
+    lidPivot.add(box(.07, .145, D + .055, goldMaterial, x, .073, D / 2));
   }
-  const lidClasp = box(.1, .12, .04, goldMaterial, 0, .02, D + .015);
+  const lidClasp = box(.12, .15, .045, goldMaterial, 0, .015, D + .035);
   lidPivot.add(lidClasp);
 
   const glowCanvas = document.createElement('canvas');
@@ -914,28 +907,25 @@ try {
     renderer.domElement.style.cursor = hovering ? 'pointer' : '';
   });
   renderer.domElement.addEventListener('pointerleave', () => { hovering = false; renderer.domElement.style.cursor = ''; });
-  const openChest = (x, y) => {
+  const openChest = () => {
     if (chestState.opened) return;
     chestState.opened = true;
     hovering = false;
     renderer.domElement.style.cursor = '';
     if (animate) {
-      gsap.to(chestState, { lid: 1, duration: .7, ease: 'back.out(1.4)' });
+      gsap.to(chestState, { lid: 1, duration: .65, ease: 'power2.inOut' });
       gsap.fromTo(chestState, { burst: 1.4 }, { burst: 0, duration: 1.4, ease: 'power2.out' });
-      gsap.delayedCall(.45, () => openTreasure(x, y));
+      gsap.delayedCall(.62, openTreasure);
     } else {
       chestState.lid = 1;
-      openTreasure(x, y);
+      openTreasure();
     }
   };
-  renderer.domElement.addEventListener('click', event => { if (hitChest(event)) openChest(event.clientX, event.clientY); });
-  chestHint?.addEventListener('click', () => {
-    const rect = chestHint.getBoundingClientRect();
-    openChest(rect.left + rect.width / 2, rect.top + rect.height / 2);
-  });
+  renderer.domElement.addEventListener('click', event => { if (hitChest(event)) openChest(); });
+  chestHint?.addEventListener('click', openChest);
   document.addEventListener('treasure:closed', () => {
     chestState.opened = false;
-    if (animate) gsap.to(chestState, { lid: 0, duration: .8, ease: 'power2.inOut' });
+    if (animate) gsap.to(chestState, { lid: 0, duration: .65, ease: 'power2.inOut' });
     else chestState.lid = 0;
   });
   const projected = new THREE.Vector3();
@@ -947,8 +937,7 @@ try {
     const pulse = .5 + .5 * Math.sin(time * 2.4);
     chest.scale.setScalar(Math.max(.0001, reveal) * (1 + chestState.hover * .05));
     chest.position.y = chestY - (1 - Math.min(reveal, 1)) * .5;
-    chestBody.rotation.z = chestState.hover * Math.sin(time * 18) * .012;
-    lidPivot.rotation.x = -(chestState.lid * 1.85 + chestState.hover * .16 * (1 - chestState.lid));
+    lidPivot.rotation.x = -chestState.lid * 1.55;
     const glowStrength = Math.min(reveal, 1) * (.28 + pulse * .06 + chestState.hover * .1 + chestState.burst * .28 + chestState.lid * .16);
     glow.scale.setScalar(1.35 + chestState.hover * .2 + chestState.burst * .5 + chestState.lid * .25);
     glow.material.opacity = clamp(glowStrength, 0, .48);
@@ -1056,31 +1045,33 @@ try {
 }
 
 const treasure = document.getElementById('treasure');
-let treasureOrigin = { x: innerWidth * .8, y: innerHeight * .6 };
 let treasureReturnFocus = null;
-function openTreasure(x, y) {
+let treasureClosing = false;
+function openTreasure() {
   if (!treasure || !treasure.hidden) return;
-  treasureOrigin = { x, y };
   treasureReturnFocus = document.activeElement === document.body ? document.querySelector('.chest-hint') : document.activeElement;
   treasure.hidden = false;
+  treasure.scrollTop = 0;
   document.body.classList.add('treasure-open');
-  siteLenis?.stop();
   const items = treasure.querySelectorAll('[data-reveal]');
   if (animate) {
-    gsap.fromTo(treasure, { clipPath: `circle(0px at ${x}px ${y}px)` }, { clipPath: `circle(150% at ${x}px ${y}px)`, duration: 1, ease: 'power3.inOut' });
-    gsap.fromTo(items, { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: .8, stagger: .08, ease: 'power3.out', delay: .45 });
+    gsap.killTweensOf(treasure);
+    gsap.fromTo(treasure, { opacity: 0 }, { opacity: 1, duration: .4, ease: 'power2.out' });
+    gsap.fromTo(items, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: .55, stagger: .06, ease: 'power2.out', delay: .08 });
   } else {
-    treasure.style.clipPath = 'none';
+    treasure.style.opacity = '1';
   }
   treasure.querySelector('.treasure-close').focus({ preventScroll: true });
 }
 function closeTreasure(next) {
-  if (!treasure || treasure.hidden) return;
+  if (!treasure || treasure.hidden || treasureClosing) return;
+  treasureClosing = true;
   const finish = () => {
     treasure.hidden = true;
+    treasure.style.opacity = '';
     document.body.classList.remove('treasure-open');
-    siteLenis?.start();
     document.dispatchEvent(new CustomEvent('treasure:closed'));
+    treasureClosing = false;
     if (next) {
       const top = story.offsetTop + panels[CHEST_STOP + 1].offsetTop;
       if (siteLenis) siteLenis.scrollTo(top, { duration: 1.6 });
@@ -1088,16 +1079,13 @@ function closeTreasure(next) {
     } else treasureReturnFocus?.focus?.({ preventScroll: true });
   };
   if (animate) {
-    const { x, y } = treasureOrigin;
-    gsap.to(treasure, { clipPath: `circle(0px at ${x}px ${y}px)`, duration: .75, ease: 'power3.inOut', onComplete: finish });
+    gsap.killTweensOf(treasure);
+    gsap.to(treasure, { opacity: 0, duration: .28, ease: 'power2.in', onComplete: finish });
   } else finish();
 }
 treasure?.querySelector('.treasure-close').addEventListener('click', () => closeTreasure(false));
 treasure?.querySelector('.treasure-next').addEventListener('click', () => closeTreasure(true));
-document.querySelector('.chest-fallback-action')?.addEventListener('click', event => {
-  const { left, top, width, height } = event.currentTarget.getBoundingClientRect();
-  openTreasure(left + width / 2, top + height / 2);
-});
+document.querySelector('.chest-fallback-action')?.addEventListener('click', openTreasure);
 document.addEventListener('keydown', event => {
   if (!treasure || treasure.hidden) return;
   if (event.key === 'Escape') { event.preventDefault(); closeTreasure(false); }
