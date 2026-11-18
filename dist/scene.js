@@ -60,6 +60,52 @@ routeStops.forEach(stop => {
   stop.setAttribute('cy', momentsRoute.getPointAtLength((low + high) / 2).y.toFixed(2));
 });
 
+const headlineSelector = '.story-panel h1, .story-panel h2, .practice h2, .capabilities h2, .method h2, .moments h2, .engagement h2';
+function wrapHeadlineWords(root) {
+  for (const node of [...root.childNodes]) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const fragment = document.createDocumentFragment();
+      for (const token of node.textContent.match(/\S+|\s+/g) || []) {
+        if (/^\s+$/.test(token)) { fragment.append(token); continue; }
+        const outer = document.createElement('span');
+        const inner = document.createElement('span');
+        outer.className = 'headline-word';
+        inner.className = 'headline-word-inner';
+        inner.textContent = token;
+        outer.append(inner);
+        fragment.append(outer);
+      }
+      node.replaceWith(fragment);
+    } else if (node.nodeType === Node.ELEMENT_NODE && !node.classList.contains('headline-word')) {
+      wrapHeadlineWords(node);
+    }
+  }
+}
+if (!reducedMotion) document.querySelectorAll(headlineSelector).forEach(wrapHeadlineWords);
+
+const exploreButton = document.querySelector('.explore-button');
+if (!reducedMotion && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+  exploreButton.addEventListener('pointermove', event => {
+    const rect = exploreButton.getBoundingClientRect();
+    exploreButton.style.setProperty('--mag-x', `${((event.clientX - rect.left) / rect.width - .5) * 9}px`);
+    exploreButton.style.setProperty('--mag-y', `${((event.clientY - rect.top) / rect.height - .5) * 6}px`);
+  });
+  exploreButton.addEventListener('pointerleave', () => {
+    exploreButton.style.setProperty('--mag-x', '0px');
+    exploreButton.style.setProperty('--mag-y', '0px');
+  });
+}
+
+function revealHeading(heading, trigger) {
+  const words = [...heading.querySelectorAll('.headline-word-inner')];
+  const regular = words.filter(word => !word.closest('em'));
+  const accent = words.filter(word => word.closest('em'));
+  const timeline = gsap.timeline(trigger ? { scrollTrigger: { trigger, start: 'top 83%', once: true } } : {});
+  timeline.from(regular, { yPercent: 105, opacity: 0, duration: .72, stagger: .075, ease: 'power3.out' });
+  if (accent.length) timeline.from(accent, { yPercent: 105, opacity: 0, duration: .82, stagger: .075, ease: 'power3.out' }, '-=.37');
+  return timeline;
+}
+
 if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   gsap.registerPlugin(ScrollTrigger);
   document.fonts?.ready.then(() => ScrollTrigger.refresh());
@@ -76,43 +122,32 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   });
 
   const hero = document.querySelector('.hero');
-  gsap.timeline({ defaults: { ease: 'power3.out' } })
-    .from(hero.querySelectorAll('.type-line'), { opacity: 0, y: 54, rotationX: -9, scaleY: .94, transformOrigin: '50% 100%', stagger: .18, duration: 1.2 })
-    .from(hero.querySelector('.lede'), { opacity: 0, y: 22, duration: .9 }, '-=.62')
-    .from(hero.querySelector('.explore-button'), { opacity: 0, y: 24, scale: .97, duration: .9 }, '-=.5');
+  const heroTimeline = revealHeading(hero.querySelector('h1'));
+  heroTimeline.from(hero.querySelector('.lede'), { opacity: 0, y: 14, duration: .68, ease: 'power2.out' }, '-=.4')
+    .from(hero.querySelector('.explore-button'), { opacity: 0, y: 15, duration: .68, ease: 'power2.out' }, '-=.43');
+  gsap.from('.scene-canvas', { opacity: 0, duration: 1.45, delay: .14, ease: 'power2.out' });
 
   document.querySelectorAll('.story-panel:not(.hero)').forEach(panel => {
-    const timeline = gsap.timeline({
-      scrollTrigger: { trigger: panel, start: 'top 86%', end: 'top 27%', scrub: .55 }
-    });
-    timeline.from(panel.querySelector('.eyebrow'), { opacity: 0, y: 17, duration: .65 }, 0)
-      .from(panel.querySelectorAll('.type-line'), { opacity: 0, y: 38, rotationX: -7, scaleY: .97, transformOrigin: '50% 100%', stagger: .11, duration: .85 }, .16)
-      .from(panel.querySelector('.lede'), { opacity: 0, x: -18, duration: .7 }, .48);
-  });
-  gsap.matchMedia().add('(min-width: 851px)', () => {
-    document.querySelectorAll('.story-panel').forEach(panel => {
-      gsap.to(panel.querySelector('.story-copy'), {
-        opacity: 0, y: -24, ease: 'none',
-        scrollTrigger: { trigger: panel, start: 'bottom 76%', end: 'bottom 44%', scrub: .25 }
-      });
+    revealHeading(panel.querySelector('h2'), panel);
+    gsap.from([panel.querySelector('.eyebrow'), panel.querySelector('.lede')], {
+      opacity: 0, y: 12, duration: .65, stagger: .1, ease: 'power2.out',
+      scrollTrigger: { trigger: panel, start: 'top 82%', once: true }
     });
   });
 
   for (const selector of ['.practice-intro', '.capabilities-heading', '.method-heading', '.moments-heading', '.engagement-copy']) {
     const heading = document.querySelector(selector);
-    const children = [...heading.children].filter(child => !child.classList.contains('engagement-terms'));
-    const reveal = gsap.timeline({ scrollTrigger: { trigger: heading, start: 'top 84%' }, defaults: { ease: 'power3.out' } })
-      .from(children[0], { opacity: 0, x: -18, duration: .6 })
-      .from(children[1], { opacity: 0, y: 30, scaleY: .98, transformOrigin: '50% 100%', duration: .85 }, '-=.4');
-    if (children.length > 2) reveal.from(children.slice(2), { opacity: 0, y: 13, duration: .65, stagger: .08 }, '-=.65');
+    revealHeading(heading.querySelector('h2'), heading);
+    gsap.from([...heading.children].filter(child => child.tagName !== 'H2'), {
+      opacity: 0, y: 12, duration: .65, stagger: .09, ease: 'power2.out',
+      scrollTrigger: { trigger: heading, start: 'top 84%', once: true }
+    });
   }
   document.querySelectorAll('.practice-list > div, .service-list > div, .method-steps > article').forEach(row => {
-    const [number, title, detail] = row.children;
-    gsap.timeline({ scrollTrigger: { trigger: row, start: 'top 90%' }, defaults: { ease: 'power3.out' } })
-      .from(row, { opacity: 0, y: 25, scale: .98, duration: .85 })
-      .from(number, { opacity: 0, x: -14, duration: .6 }, '-=.56')
-      .from(title, { opacity: 0, x: -18, duration: .72 }, '-=.53')
-      .from(detail, { opacity: 0, y: 12, duration: .72 }, '-=.5');
+    gsap.from(row, {
+      opacity: 0, y: 18, duration: .7, ease: 'power2.out',
+      scrollTrigger: { trigger: row, start: 'top 90%', once: true }
+    });
   });
   const routeTimeline = gsap.timeline({ scrollTrigger: { trigger: '.moments', start: 'top 78%', end: 'top 28%', scrub: .6 } });
   routeTimeline.fromTo(momentsRoute, { strokeDasharray: routeLength, strokeDashoffset: routeLength }, { strokeDashoffset: 0, duration: 1, ease: 'none' }, 0);
@@ -137,6 +172,21 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
     strokeDashoffset: 0, ease: 'none',
     scrollTrigger: { trigger: '.practice', start: 'top 78%', end: 'top 30%', scrub: .55 }
   });
+  gsap.fromTo('.practice-route', { xPercent: -4 }, {
+    xPercent: 4, ease: 'none',
+    scrollTrigger: { trigger: '.practice', start: 'top bottom', end: 'bottom top', scrub: .6 }
+  });
+  for (const [selector, from, to] of [
+    ['.practice', '#e6f2fa', '#dcecf7'],
+    ['.method', '#e0f1fb', '#d2e9f8'],
+    ['.moments', '#f0f8fd', '#e5f3fb'],
+    ['.engagement', '#e0f0fa', '#d7eaf7']
+  ]) {
+    gsap.fromTo(selector, { backgroundColor: from }, {
+      backgroundColor: to, ease: 'none',
+      scrollTrigger: { trigger: selector, start: 'top bottom', end: 'bottom top', scrub: .7 }
+    });
+  }
 } else {
   const updateProgress = () => {
     const length = Math.max(1, story.offsetHeight - innerHeight);
@@ -185,6 +235,8 @@ try {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#e6f4fb');
   scene.fog = new THREE.FogExp2('#e6f4fb', .011);
+  const fogStops = ['#e6f4fb', '#dfedf7', '#e9f5f9', '#dfedf8'].map(color => new THREE.Color(color));
+  const currentFog = new THREE.Color();
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -767,12 +819,25 @@ try {
   let firstFrame = true;
   let previousProgress = 0;
   let walkingEnergy = 0;
-  function render() {
-    const progress = reducedMotion ? 0 : clamp(motion.progress, 0, 1);
-    if (story.getBoundingClientRect().bottom <= 0) {
+  let rendering = false;
+  const sceneIsVisible = () => {
+    const rect = story.getBoundingClientRect();
+    return document.visibilityState === 'visible' && rect.bottom > 0 && rect.top < innerHeight;
+  };
+  function queueRender() {
+    if (!rendering && sceneIsVisible()) {
+      rendering = true;
       requestAnimationFrame(render);
-      return;
     }
+  }
+  function render() {
+    if (!sceneIsVisible()) { rendering = false; return; }
+    const progress = reducedMotion ? 0 : clamp(motion.progress, 0, 1);
+    const fogPosition = progress * (fogStops.length - 1);
+    const fogIndex = Math.min(fogStops.length - 2, Math.floor(fogPosition));
+    currentFog.copy(fogStops[fogIndex]).lerp(fogStops[fogIndex + 1], fogPosition - fogIndex);
+    scene.background.copy(currentFog);
+    scene.fog.color.copy(currentFog);
     const step = Math.abs(progress - previousProgress);
     walkingEnergy += (clamp(step * 90, 0, 1) - walkingEnergy) * .14;
     previousProgress = progress;
@@ -801,9 +866,14 @@ try {
     }
     renderer.render(scene, camera);
     if (firstFrame) { document.body.classList.add('webgl-ready'); firstFrame = false; }
+    if (reducedMotion) { rendering = false; return; }
     requestAnimationFrame(render);
   }
-  requestAnimationFrame(render);
+  if (!reducedMotion) addEventListener('scroll', queueRender, { passive: true });
+  addEventListener('visibilitychange', queueRender);
+  addEventListener('resize', queueRender);
+  new IntersectionObserver(queueRender).observe(story);
+  queueRender();
 } catch (error) {
   console.warn('Forest scene unavailable:', error);
 }
