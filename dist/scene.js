@@ -143,11 +143,16 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
       scrollTrigger: { trigger: heading, start: 'top 84%', once: true }
     });
   }
-  document.querySelectorAll('.practice-list > div, .service-list > div, .method-steps > article').forEach(row => {
+  document.querySelectorAll('.practice-list > div, .method-steps > article').forEach(row => {
     gsap.from(row, {
       opacity: 0, y: 18, duration: .7, ease: 'power2.out',
       scrollTrigger: { trigger: row, start: 'top 90%', once: true }
     });
+  });
+  gsap.from('.service-list > div', {
+    clipPath: 'inset(0 0 100% 0)', opacity: 0, y: 24,
+    duration: 1.05, stagger: .12, ease: 'power3.out',
+    scrollTrigger: { trigger: '.service-list', start: 'top 82%', once: true }
   });
   const routeTimeline = gsap.timeline({ scrollTrigger: { trigger: '.moments', start: 'top 70%', end: 'top -15%', scrub: 2.4 } });
   routeTimeline.fromTo(momentsRoute, { strokeDasharray: routeLength, strokeDashoffset: routeLength }, { strokeDashoffset: 0, duration: 1, ease: 'none' }, 0);
@@ -166,6 +171,16 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   gsap.from('.site-footer > *', {
     opacity: 0, y: 12, duration: .65, stagger: .1, ease: 'power2.out',
     scrollTrigger: { trigger: '.site-footer', start: 'top 95%' }
+  });
+  const footerPath = document.querySelector('.footer-route path');
+  const footerPathLength = footerPath.getTotalLength();
+  gsap.fromTo(footerPath, { strokeDasharray: footerPathLength, strokeDashoffset: footerPathLength }, {
+    strokeDashoffset: 0, ease: 'none',
+    scrollTrigger: { trigger: '.site-footer', start: 'top 85%', end: 'bottom 85%', scrub: 1.2 }
+  });
+  gsap.from('.footer-brand', {
+    opacity: 0, y: 35, letterSpacing: '-.13em', duration: 1.2, ease: 'power3.out',
+    scrollTrigger: { trigger: '.site-footer', start: 'top 78%', once: true }
   });
   const practicePath = document.querySelector('.practice-route path');
   const practicePathLength = practicePath.getTotalLength();

@@ -288,3 +288,35 @@ section[id] { scroll-margin-top: 100px; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* Center the brand in both header states. */
+.wordmark { position: absolute; top: 50%; left: 50%; width: min(360px, 60vw); transform: translate(-50%, -50%); }
+.wordmark-full { left: 50%; transform: translate(-50%, -50%); }
+.is-scrolled .wordmark-full { transform: translate(-50%, -70%); }
+.header-emblem { display: none; }
+
+/* One consistent surface for every service. */
+.service-list > div:nth-child(n), .service-list > div:nth-child(n):hover { background: #e8f3fa; box-shadow: none; }
+.service-list > div:hover { transform: none; }
+.service-list > div:hover h3, .service-list > div:hover span { transform: none; }
+.service-list > div:hover span { color: var(--accent); }
+
+.site-footer { display: block; min-height: 330px; padding: 30px 8vw 0; overflow: hidden; background: #d9eef9; }
+.footer-top { display: flex; justify-content: space-between; gap: 24px; color: #315a75; font: 500 14px/1.4 var(--sans); }
+.footer-main { display: flex; justify-content: space-between; align-items: end; gap: 30px; margin-top: 31px; }
+.site-footer .footer-brand { color: var(--ink); font: 500 clamp(62px, 9vw, 132px)/.94 var(--sans); letter-spacing: -.085em; white-space: nowrap; }
+.footer-dot { color: var(--accent); }
+.site-footer .footer-return { display: inline-flex; align-items: center; justify-content: space-between; gap: 34px; min-width: 185px; margin-bottom: 9px; padding: 12px 0; border-bottom: 2px solid var(--ink); color: var(--ink); font: 500 15px/1 var(--sans); }
+.footer-return span { font-size: 24px; line-height: .7; transition: transform .35s cubic-bezier(.22,1,.36,1); }
+.footer-return:hover span { transform: translateY(-5px); }
+.footer-route { display: block; width: 100%; height: 92px; margin-top: 23px; overflow: visible; fill: none; stroke: #428ebc; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.footer-route circle { fill: #d9eef9; stroke: #428ebc; stroke-width: 2; }
+@media (max-width: 650px) {
+  .site-header nav { display: none; }
+  .wordmark { width: min(330px, 88vw); }
+  .site-footer { min-height: 0; padding: 28px 6% 0; }
+  .footer-main { display: block; margin-top: 32px; }
+  .site-footer .footer-brand { font-size: clamp(53px, 12vw, 76px); }
+  .site-footer .footer-return { margin-top: 25px; }
+  .footer-route { height: 65px; margin-top: 18px; }
+}
