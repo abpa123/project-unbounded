@@ -7,7 +7,8 @@ const motion = { progress: 0 };
 const clamp = THREE.MathUtils.clamp;
 // Each story panel is a stop on the trail; the camera walks to the stop's progress value.
 const panels = [...document.querySelectorAll('.story-panel')];
-const stops = [0, .2, .6, 1];
+// Scroll progress (0–1 across the story, as on main) at which each panel's text is in place.
+let stops = [0, .2, .6, 1];
 const CHEST_STOP = 1;
 const chestState = { reveal: 0, hover: 0, lid: 0, burst: 0, opened: false };
 let lenis = null;
@@ -31,11 +32,27 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   gsap.registerPlugin(ScrollTrigger);
   document.fonts?.ready.then(() => ScrollTrigger.refresh());
   if (window.Lenis) {
-    lenis = new Lenis({ lerp: .085, wheelMultiplier: 1, anchors: true });
+    lenis = new Lenis({ lerp: .16, wheelMultiplier: 1.12, anchors: true });
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add(time => lenis.raf(time * 1000));
     gsap.ticker.lagSmoothing(0);
   }
+  // Main's camera scrub, plus ScrollTrigger's own snap: when scrolling rests, it eases to the
+  // nearest panel's text so the page never stops between two.
+  gsap.to(motion, {
+    progress: 1,
+    ease: 'none',
+    scrollTrigger: {
+      trigger: story, start: 'top top', end: 'bottom bottom', scrub: .2,
+      snap: {
+        snapTo: value => stops.reduce((best, stop) => Math.abs(stop - value) < Math.abs(best - value) ? stop : best, stops[0]),
+        duration: { min: .5, max: 1.1 },
+        delay: .12,
+        ease: 'power2.inOut',
+        inertia: false
+      }
+    }
+  });
 
   const hero = document.querySelector('.hero');
   gsap.timeline({ defaults: { ease: 'power3.out' } })
@@ -104,9 +121,15 @@ if (window.gsap && window.ScrollTrigger && !reducedMotion) {
   gsap.from('.moments-route circle', { opacity: 0, scale: .2, transformOrigin: 'center', stagger: .12, duration: .7, ease: 'back.out(1.6)', scrollTrigger: { trigger: '.moments', start: 'top 55%' } });
 }
 
-// The camera follows the scroll, as before: between two panels it walks between their stops,
-// so each panel's text lines up with its spot on the trail.
+// Each panel's stop is where its top meets the top of the screen, as a fraction of the story's
+// scroll range; the last one sits past the range end, so it clamps to 1.
 const animate = window.gsap && !reducedMotion;
+function measureStops() {
+  const range = Math.max(1, story.offsetHeight - innerHeight);
+  stops = panels.map(panel => clamp(panel.offsetTop / range, 0, 1));
+}
+measureStops();
+addEventListener('resize', measureStops);
 function arriveAt(index) {
   if (index !== CHEST_STOP || chestState.reveal > 0) return;
   if (animate) {
@@ -114,49 +137,15 @@ function arriveAt(index) {
     gsap.fromTo(chestState, { burst: 1 }, { burst: 0, duration: 1.6, ease: 'power2.out' });
   } else chestState.reveal = 1;
 }
-const snapPoints = () => panels.map(panel => story.offsetTop + panel.offsetTop);
-function updateProgress() {
-  const points = snapPoints();
-  const position = scrollY;
-  let progress = 1;
-  for (let i = 0; i < points.length - 1; i++) {
-    if (position < points[i + 1]) {
-      const t = clamp((position - points[i]) / (points[i + 1] - points[i]), 0, 1);
-      progress = stops[i] + (stops[i + 1] - stops[i]) * t;
-      break;
-    }
-  }
-  motion.progress = progress;
-  // The nearest panel is the active one; the chest rises once you are close to its stop.
-  let nearest = 0;
-  points.forEach((point, i) => { if (Math.abs(point - position) < Math.abs(points[nearest] - position)) nearest = i; });
-  activeStop = nearest;
-  if (Math.abs(progress - stops[CHEST_STOP]) < .035) arriveAt(CHEST_STOP);
+function updateStop() {
+  if (!animate) motion.progress = clamp(scrollY / Math.max(1, story.offsetHeight - innerHeight), 0, 1);
+  const progress = motion.progress;
+  activeStop = stops.reduce((best, stop, i) => Math.abs(stop - progress) < Math.abs(stops[best] - progress) ? i : best, 0);
+  if (Math.abs(progress - stops[CHEST_STOP]) < .04) arriveAt(CHEST_STOP);
 }
-
-// Magnetic stops: once scrolling comes to rest inside the story, the page glides to the
-// nearest panel so it never stops between two texts. Any new scroll takes over at once.
-let settleTimer = 0;
-function settleOnNearest() {
-  clearTimeout(settleTimer);
-  settleTimer = setTimeout(() => {
-    if (document.body.classList.contains('treasure-open')) return;
-    if (lenis && (lenis.isScrolling || Math.abs(lenis.targetScroll - lenis.animatedScroll) > 1)) { settleOnNearest(); return; }
-    const points = snapPoints();
-    const position = scrollY;
-    const last = points[points.length - 1];
-    // Past the last panel, let the page scroll on into the rest of the site.
-    if (position > last + innerHeight * .2) return;
-    const target = points.reduce((best, point) => Math.abs(point - position) < Math.abs(best - position) ? point : best, points[0]);
-    const distance = Math.abs(target - position);
-    if (distance < 2) return;
-    if (lenis) lenis.scrollTo(target, { duration: clamp(.9 + distance / 700, .9, 1.8), easing: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 });
-    else scrollTo({ top: target, behavior: reducedMotion ? 'auto' : 'smooth' });
-  }, 220);
-}
-addEventListener('scroll', () => { updateProgress(); settleOnNearest(); }, { passive: true });
-addEventListener('resize', updateProgress);
-updateProgress();
+addEventListener('scroll', updateStop, { passive: true });
+if (window.gsap) gsap.ticker.add(updateStop);
+updateStop();
 
 // All positions are deterministic so the same trail remains recognizable on return visits.
 function randomGenerator(seed) {
@@ -927,11 +916,9 @@ try {
 
   let firstFrame = true;
   let previousProgress = 0;
-  let smoothProgress = motion.progress;
   let walkingEnergy = 0;
   function render() {
-    smoothProgress += (clamp(motion.progress, 0, 1) - smoothProgress) * (reducedMotion ? 1 : .09);
-    const progress = smoothProgress;
+    const progress = clamp(motion.progress, 0, 1);
     if (story.getBoundingClientRect().bottom <= 0) {
       requestAnimationFrame(render);
       return;
