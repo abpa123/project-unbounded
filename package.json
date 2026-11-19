@@ -1,0 +1,14 @@
+{
+  "name": "project-unbounded",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Project Unbounded marketing site (static, served from dist/).",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev-server.mjs",
+    "start": "node scripts/dev-server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
