@@ -444,9 +444,4 @@ body.trail-note-open { overflow: hidden; }
 .webgl-unavailable .trail-note-fallback { display: inline-block; }
 @media (prefers-reduced-motion:reduce) { .trail-note-fallback { display: inline-block; } }
 
-.chest-aura { position: absolute; z-index: 4; width: 150px; height: 130px; pointer-events: none; transform: translate(-50%, -50%); background: radial-gradient(ellipse at 50% 57%,rgba(255,203,114,.4),rgba(255,217,144,.19) 36%,transparent 72%); mix-blend-mode: screen; }
 .scene-vignette { pointer-events: none; }
-.chest-aura[hidden] { display: none; }
-.chest-aura span { position: absolute; left: calc(50% + var(--x)); bottom: 27%; width: 4px; height: 4px; border-radius: 50%; background: #fff2ca; box-shadow: 0 0 7px 2px #f2bf71; animation: chest-mote var(--duration) ease-out var(--delay) infinite; }
-@keyframes chest-mote { 0% { transform: translateY(6px) scale(.55); opacity: 0; } 23% { opacity: .95; } 80% { opacity: .65; } 100% { transform: translateY(-84px) scale(.25); opacity: 0; } }
-@media (prefers-reduced-motion:reduce) { .chest-aura span { animation: none; opacity: .8; } }
