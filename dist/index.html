@@ -11,7 +11,7 @@
   <link rel="preload" href="fonts/instrument-serif-italic.woff" as="font" type="font/woff" crossorigin>
   <link rel="preload" href="fonts/ibm-plex-sans-regular.woff" as="font" type="font/woff" crossorigin>
   <link rel="stylesheet" href="vendor/lenis.css">
-  <link rel="stylesheet" href="styles.css?v=parchment-20">
+  <link rel="stylesheet" href="styles.css?v=forest-sign-21">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -24,12 +24,15 @@
     <img class="scene-fallback" src="fallback.png" alt="">
     <div class="scene-canvas" id="scene-canvas" aria-hidden="true"></div>
     <div class="scene-vignette" aria-hidden="true"></div>
+    <div class="chest-aura" aria-hidden="true" hidden></div>
     <button class="chest-hint" type="button" hidden>Open the chest</button>
-    <button class="trail-scroll" type="button" aria-haspopup="dialog" aria-controls="trail-note" aria-label="Read the trail note" inert>
-      <span class="trail-scroll-cord" aria-hidden="true"></span>
-      <span class="trail-scroll-rod" aria-hidden="true"></span>
-      <span class="trail-scroll-paper"><span class="trail-scroll-kicker">A note from the trail</span><strong>Make the pieces<br>work together.</strong><span class="trail-scroll-invite">Read the note <span aria-hidden="true">↗</span></span></span>
-      <span class="trail-scroll-bottom" aria-hidden="true"></span>
+    <button class="trail-sign" type="button" aria-haspopup="dialog" aria-controls="trail-note" aria-label="Read the trail note" inert>
+      <span class="trail-sign-branch" aria-hidden="true"></span>
+      <span class="trail-sign-hanging">
+        <span class="trail-sign-rope trail-sign-rope-left" aria-hidden="true"></span>
+        <span class="trail-sign-rope trail-sign-rope-right" aria-hidden="true"></span>
+        <span class="trail-sign-board"><span class="trail-sign-plank trail-sign-plank-top"><strong>Read me</strong></span><span class="trail-sign-plank trail-sign-plank-bottom">A note from the trail</span></span>
+      </span>
     </button>
   </div>
   <div class="trail-note" id="trail-note" role="dialog" aria-modal="true" aria-labelledby="trail-note-title" data-lenis-prevent hidden>
@@ -142,6 +145,6 @@
   <script src="vendor/gsap.min.js"></script>
   <script src="vendor/ScrollTrigger.min.js"></script>
   <script src="vendor/lenis.min.js"></script>
-  <script type="module" src="scene.js?v=parchment-20"></script>
+  <script type="module" src="scene.js?v=forest-sign-21"></script>
 </body>
 </html>

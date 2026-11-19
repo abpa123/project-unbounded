@@ -890,16 +890,34 @@ try {
   const chestLight = new THREE.PointLight('#e4c49b', 0, 3.2, 1.8);
   chestLight.position.set(0, .9, .2);
   chest.add(chestLight);
+  const emberCount = 22;
+  const emberSeeds = Array.from({ length: emberCount }, () => ({ angle: random() * Math.PI * 2, radius: .34 + random() * .63, phase: random(), speed: .22 + random() * .28 }));
+  const emberPositions = new Float32Array(emberCount * 3);
+  const emberGeometry = new THREE.BufferGeometry();
+  emberGeometry.setAttribute('position', new THREE.BufferAttribute(emberPositions, 3));
+  const embers = new THREE.Points(emberGeometry, new THREE.PointsMaterial({ map: glowTexture, color: '#f6d29b', size: .15, sizeAttenuation: true, transparent: true, opacity: .9, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+  chest.add(embers);
+  const chestHitArea = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.32, 1.18), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+  chestHitArea.position.set(0, .57, 0);
+  chest.add(chestHitArea);
 
   const chestHint = document.querySelector('.chest-hint');
+  const chestAura = document.querySelector('.chest-aura');
+  for (let i = 0; i < 14; i++) {
+    const mote = document.createElement('span');
+    mote.style.setProperty('--x', `${Math.sin(i * 2.4) * (20 + i % 4 * 9)}px`);
+    mote.style.setProperty('--delay', `${(i * .23) % 2.8}s`);
+    mote.style.setProperty('--duration', `${2.2 + (i % 4) * .36}s`);
+    chestAura.append(mote);
+  }
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
   const hitChest = event => {
-    if (chestState.reveal < .6 || chestState.opened) return false;
+    if (activeStop !== CHEST_STOP || chestState.reveal < .6 || chestState.opened) return false;
     const rect = renderer.domElement.getBoundingClientRect();
     pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
-    return raycaster.intersectObject(chest, true).length > 0;
+    return raycaster.intersectObject(chestHitArea).length > 0;
   };
   let hovering = false;
   renderer.domElement.addEventListener('pointermove', event => {
@@ -933,16 +951,33 @@ try {
     const reveal = chestState.reveal;
     chestState.hover += ((hovering ? 1 : 0) - chestState.hover) * .12;
     chest.visible = reveal > .001;
-    if (!chest.visible) { if (chestHint) chestHint.hidden = true; return; }
+    if (!chest.visible) { if (chestHint) chestHint.hidden = true; chestAura.hidden = true; return; }
     const pulse = .5 + .5 * Math.sin(time * 2.4);
     chest.scale.setScalar(Math.max(.0001, reveal) * (1 + chestState.hover * .05));
     chest.position.y = chestY - (1 - Math.min(reveal, 1)) * .5;
     lidPivot.rotation.x = -chestState.lid * 1.55;
-    const glowStrength = Math.min(reveal, 1) * (.28 + pulse * .06 + chestState.hover * .1 + chestState.burst * .28 + chestState.lid * .16);
-    glow.scale.setScalar(1.35 + chestState.hover * .2 + chestState.burst * .5 + chestState.lid * .25);
-    glow.material.opacity = clamp(glowStrength, 0, .48);
-    chestLight.intensity = glowStrength * 1.3;
+    const glowStrength = Math.min(reveal, 1) * (.42 + pulse * .12 + chestState.hover * .17 + chestState.burst * .25 + chestState.lid * .2);
+    glow.scale.setScalar(1.8 + chestState.hover * .25 + chestState.burst * .65 + chestState.lid * .3);
+    glow.material.opacity = clamp(glowStrength, 0, .65);
+    chestLight.intensity = glowStrength * 1.55;
     goldMaterial.emissiveIntensity = .12 + chestState.hover * .06 + chestState.burst * .1;
+    for (let i = 0; i < emberCount; i++) {
+      const seed = emberSeeds[i];
+      const travel = (time * seed.speed + seed.phase) % 1;
+      const drift = Math.sin(time * 1.8 + i * 1.7) * .09;
+      emberPositions[i * 3] = Math.cos(seed.angle) * seed.radius + drift;
+      emberPositions[i * 3 + 1] = .16 + travel * (1.05 + chestState.lid * .4);
+      emberPositions[i * 3 + 2] = Math.sin(seed.angle) * seed.radius * .62 + .08;
+    }
+    emberGeometry.attributes.position.needsUpdate = true;
+    embers.material.opacity = Math.min(reveal, 1) * (.52 + pulse * .24 + chestState.hover * .18);
+    const auraPosition = new THREE.Vector3(chestX, chestY + .42, chestZ).project(camera);
+    const auraVisible = activeStop === CHEST_STOP && reveal > .75 && !chestState.opened && auraPosition.z < 1 && Math.abs(auraPosition.x) < 1.1;
+    chestAura.hidden = !auraVisible;
+    if (auraVisible) {
+      chestAura.style.left = `${(auraPosition.x * .5 + .5) * stage.clientWidth}px`;
+      chestAura.style.top = `${(-auraPosition.y * .5 + .5) * stage.clientHeight}px`;
+    }
     if (chestHint) {
       projected.set(chestX, chestY + 1.05, chestZ).project(camera);
       const show = activeStop === CHEST_STOP && reveal > .8 && !chestState.opened && projected.z < 1 && Math.abs(projected.x) < 1.1;
@@ -1097,7 +1132,7 @@ document.addEventListener('keydown', event => {
   }
 });
 
-const trailScroll = document.querySelector('.trail-scroll');
+const trailScroll = document.querySelector('.trail-sign');
 const trailNote = document.getElementById('trail-note');
 const trailNoteSheet = trailNote?.querySelector('.trail-note-sheet');
 let trailNoteClosing = false;
