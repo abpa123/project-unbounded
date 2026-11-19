@@ -970,18 +970,19 @@ try {
   const glowCanvas = document.createElement('canvas');
   glowCanvas.width = glowCanvas.height = 128;
   const glowContext = glowCanvas.getContext('2d');
-  const glowGradient = glowContext.createRadialGradient(64, 64, 0, 64, 64, 64);
-  glowGradient.addColorStop(0, 'rgba(255, 234, 199, .65)');
-  glowGradient.addColorStop(.25, 'rgba(241, 208, 162, .22)');
+  const glowGradient = glowContext.createRadialGradient(64, 64, 3, 64, 64, 62);
+  glowGradient.addColorStop(0, 'rgba(255, 234, 199, .48)');
+  glowGradient.addColorStop(.3, 'rgba(241, 208, 162, .17)');
+  glowGradient.addColorStop(.72, 'rgba(241, 208, 162, .035)');
   glowGradient.addColorStop(1, 'rgba(241, 208, 162, 0)');
   glowContext.fillStyle = glowGradient;
   glowContext.fillRect(0, 0, 128, 128);
   const glowTexture = new THREE.CanvasTexture(glowCanvas);
   glowTexture.colorSpace = THREE.SRGBColorSpace;
   const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false, toneMapped: false }));
-  glow.position.set(0, .4, 0);
+  glow.position.set(0, .95, 0);
   chest.add(glow);
-  const chestLight = new THREE.PointLight('#e4c49b', 0, 3.2, 1.8);
+  const chestLight = new THREE.PointLight('#e4c49b', 0, 7, 2);
   chestLight.position.set(0, .9, .2);
   chest.add(chestLight);
   const chestHitArea = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.32, 1.18), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
@@ -1040,9 +1041,9 @@ try {
     chest.position.y = chestY - (1 - Math.min(reveal, 1)) * .5;
     lidPivot.rotation.x = -chestState.lid * 1.55;
     const glowStrength = Math.min(reveal, 1) * (.42 + pulse * .12 + chestState.hover * .17 + chestState.burst * .25 + chestState.lid * .2);
-    glow.scale.setScalar(1.8 + chestState.hover * .25 + chestState.burst * .65 + chestState.lid * .3);
-    glow.material.opacity = clamp(glowStrength, 0, .65);
-    chestLight.intensity = glowStrength * 1.55;
+    glow.scale.setScalar(1.35 + chestState.hover * .12 + chestState.burst * .22 + chestState.lid * .12);
+    glow.material.opacity = clamp(glowStrength, 0, .58);
+    chestLight.intensity = glowStrength * .9;
     goldMaterial.emissiveIntensity = .12 + chestState.hover * .06 + chestState.burst * .1;
     if (chestHint) {
       projected.set(chestX, chestY + 1.05, chestZ).project(camera);
