@@ -434,30 +434,15 @@ body.trail-note-open { overflow: hidden; }
   .chest-hint { animation: none; }
 }
 
-/* Two ropes suspend a pair of timber planks from the forest canopy. */
-.trail-sign { position: absolute; z-index: 6; top: 77px; left: 52%; width: min(300px, 69%); height: 247px; padding: 0; border: 0; background: none; color: #f5f3ed; cursor: pointer; opacity: 0; pointer-events: none; transform: translateX(-50%); transition: opacity .3s ease; }
+/* The 3D board supplies the artwork; this button is its projected hit target. */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.trail-sign { position: absolute; z-index: 6; left: 0; top: 0; width: 0; height: 0; padding: 0; border: 0; background: transparent; opacity: 0; pointer-events: none; transform: translate(-50%, -50%); cursor: pointer; }
 .trail-sign.is-visible { opacity: 1; pointer-events: auto; }
-.trail-sign-branch { position: absolute; left: 11%; top: 0; width: 122%; height: 15px; border-radius: 80% 18% 48% 24%; background: linear-gradient(180deg,#7d9aaa,#4a7187 49%,#315771); box-shadow: 0 3px 7px rgba(24,55,73,.22); transform: rotate(-7deg); transform-origin: 15% 50%; }
-.trail-sign-branch::before { content: ''; position: absolute; right: 5%; top: -13px; width: 44%; height: 12px; border-radius: 60% 10% 40% 20%; background: #597e94; transform: rotate(-23deg); transform-origin: 100% 50%; }
-.trail-sign-hanging { position: absolute; inset: 0; transform-origin: 50% 0; transform: translateY(-225px) rotate(-17deg); }
-.trail-sign.is-visible .trail-sign-hanging { animation: timber-drop 1.65s cubic-bezier(.22,.8,.21,1) both; }
-@keyframes timber-drop { 0% { transform: translateY(-225px) rotate(-17deg); } 42% { transform: translateY(17px) rotate(8deg); } 65% { transform: translateY(-9px) rotate(-5deg); } 82% { transform: translateY(3px) rotate(2deg); } 100% { transform: translateY(0) rotate(0); } }
-.trail-sign-rope { position: absolute; top: 3px; width: 8px; height: 91px; border-radius: 6px; background: repeating-linear-gradient(135deg,#c6b89f 0 3px,#907d67 3px 5px,#dacbb3 5px 8px); box-shadow: inset -2px 0 2px rgba(57,44,31,.26), 1px 0 2px rgba(28,47,55,.2); }
-.trail-sign-rope-left { left: 18%; }
-.trail-sign-rope-right { right: 18%; }
-.trail-sign-rope::after { content: ''; position: absolute; bottom: 0; left: -5px; width: 18px; height: 14px; border: 4px solid #ad9b82; border-radius: 6px; box-shadow: 0 1px 2px rgba(30,25,20,.3); }
-.trail-sign-board { position: absolute; left: 0; right: 0; top: 79px; display: block; filter: drop-shadow(0 10px 10px rgba(19,50,66,.23)); transform: perspective(600px) rotateY(-3deg); transition: transform .35s ease, filter .35s ease; }
-.trail-sign:hover .trail-sign-board { transform: perspective(600px) rotateY(0) translateY(-3px); filter: drop-shadow(0 15px 13px rgba(19,50,66,.3)); }
-.trail-sign-plank { position: relative; display: flex; align-items: center; justify-content: center; border: 1px solid #423d37; background: repeating-linear-gradient(177deg,transparent 0 6px,rgba(30,24,18,.13) 7px 8px,transparent 9px 17px), linear-gradient(95deg,#4b4943 0%,#796c5d 19%,#574f46 43%,#786a59 74%,#46423d 100%); box-shadow: inset 0 3px 2px rgba(220,204,177,.18), inset 0 -4px 4px rgba(30,24,20,.22); }
-.trail-sign-plank::before, .trail-sign-plank::after { content: ''; position: absolute; top: 50%; width: 5px; height: 5px; border-radius: 50%; background: #b7a187; box-shadow: 0 1px 2px rgba(0,0,0,.5); transform: translateY(-50%); }
-.trail-sign-plank::before { left: 13px; }
-.trail-sign-plank::after { right: 13px; }
-.trail-sign-plank-top { height: 69px; }
-.trail-sign-plank-top strong { font: 400 49px/.9 var(--serif); letter-spacing: -.02em; text-shadow: 0 1px 1px rgba(0,0,0,.2); }
-.trail-sign-plank-bottom { height: 48px; margin-top: 2px; color: #e9e4d9; font: 500 13px/1 var(--sans); letter-spacing: -.01em; }
-.trail-sign:focus-visible { outline: 3px solid #287eb7; outline-offset: 5px; }
-@media (max-width:850px) { .trail-sign { top: 18px; left: 50%; width: min(272px,66%); height: 196px; } .trail-sign-rope { height: 59px; } .trail-sign-board { top: 49px; } .trail-sign-plank-top { height: 58px; } .trail-sign-plank-top strong { font-size: 42px; } .trail-sign-plank-bottom { height: 39px; font-size: 12px; } .trail-sign.is-visible .trail-sign-hanging { animation-duration: 1.4s; } }
-@media (prefers-reduced-motion:reduce) { .trail-sign-hanging, .trail-sign.is-visible .trail-sign-hanging { animation: none; transform: none; } }
+.trail-sign:focus-visible { outline: 3px solid #287eb7; outline-offset: 4px; }
+.trail-note-fallback { display: none; margin-top: 23px; padding: 9px 0 5px; border: 0; border-bottom: 1px solid currentColor; background: transparent; color: var(--accent); font: 500 15px/1.3 var(--sans); cursor: pointer; }
+.trail-note-fallback:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.webgl-unavailable .trail-note-fallback { display: inline-block; }
+@media (prefers-reduced-motion:reduce) { .trail-note-fallback { display: inline-block; } }
 
 .chest-aura { position: absolute; z-index: 4; width: 150px; height: 130px; pointer-events: none; transform: translate(-50%, -50%); background: radial-gradient(ellipse at 50% 57%,rgba(255,203,114,.4),rgba(255,217,144,.19) 36%,transparent 72%); mix-blend-mode: screen; }
 .scene-vignette { pointer-events: none; }

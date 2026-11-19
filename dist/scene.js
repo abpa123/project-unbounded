@@ -6,6 +6,8 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matc
 const motion = { progress: 0 };
 const clamp = THREE.MathUtils.clamp;
 const panels = [...document.querySelectorAll('.story-panel')];
+const trailScroll = document.querySelector('.trail-sign');
+let updateArchSign = () => {};
 const CHEST_STOP = 1;
 const chestState = { reveal: 0, hover: 0, lid: 0, burst: 0, opened: false };
 let stops = [0, .25, .5, .75];
@@ -635,6 +637,101 @@ try {
     }
   }
 
+  // The second arch holds a small sign. Its ropes extend before the board swings to rest.
+  const signZ = -62.5;
+  const signPivot = new THREE.Group();
+  signPivot.position.set(pathX(-66), trailHeight(-66) + 3.8, signZ);
+  signPivot.visible = false;
+  scene.add(signPivot);
+  const signMotion = { length: 0, swing: -.16 };
+  let signInView = false;
+  const ropeMaterial = new THREE.MeshStandardMaterial({ color: '#577f99', roughness: 1, metalness: 0 });
+  const plankMaterial = new THREE.MeshStandardMaterial({ color: '#95b7ca', roughness: 1, metalness: 0 });
+  const plankLowerMaterial = new THREE.MeshStandardMaterial({ color: '#779cb4', roughness: 1, metalness: 0 });
+  const signEdgeMaterial = new THREE.MeshStandardMaterial({ color: '#5d829b', roughness: 1, metalness: 0 });
+  const signRopes = [-.62, .62].map(x => {
+    const rope = new THREE.Mesh(new THREE.CylinderGeometry(.046, .046, 1, 6), ropeMaterial);
+    rope.position.x = x;
+    rope.position.z = .16;
+    signPivot.add(rope);
+    return rope;
+  });
+  const signBoard = new THREE.Group();
+  signPivot.add(signBoard);
+  const signTop = new THREE.Mesh(new THREE.BoxGeometry(2.72, .52, .12), plankMaterial);
+  signTop.position.y = .16;
+  const signBottom = new THREE.Mesh(new THREE.BoxGeometry(2.72, .32, .12), plankLowerMaterial);
+  signBottom.position.y = -.27;
+  signBoard.add(signTop, signBottom);
+  for (const x of [-1.22, 1.22]) {
+    for (const y of [.16, -.27]) {
+      const peg = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .012, 6), signEdgeMaterial);
+      peg.rotation.x = Math.PI / 2;
+      peg.position.set(x, y, .072);
+      signBoard.add(peg);
+    }
+  }
+  const signCanvas = document.createElement('canvas');
+  signCanvas.width = 1024;
+  signCanvas.height = 256;
+  const signContext = signCanvas.getContext('2d');
+  const signTexture = new THREE.CanvasTexture(signCanvas);
+  signTexture.colorSpace = THREE.SRGBColorSpace;
+  function paintSign() {
+    signContext.clearRect(0, 0, 1024, 256);
+    signContext.fillStyle = '#173f59';
+    signContext.textAlign = 'center';
+    signContext.textBaseline = 'middle';
+    signContext.font = '176px "Instrument Serif", Georgia, serif';
+    signContext.fillText('Read me', 512, 126);
+    signTexture.needsUpdate = true;
+  }
+  paintSign();
+  document.fonts?.ready.then(paintSign);
+  const signLettering = new THREE.Mesh(new THREE.PlaneGeometry(2.46, .47), new THREE.MeshBasicMaterial({ map: signTexture, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+  signLettering.position.set(0, .16, .069);
+  signBoard.add(signLettering);
+  const signScreenCenter = new THREE.Vector3();
+  const signScreenLeft = new THREE.Vector3();
+  const signScreenRight = new THREE.Vector3();
+  updateArchSign = () => {
+    const rect = panels[2].getBoundingClientRect();
+    const inView = rect.top < 0 && rect.bottom > innerHeight * .27;
+    if (inView && !signInView) {
+      signInView = true;
+      signPivot.visible = true;
+      if (animate) {
+        gsap.getTweensOf(signMotion).forEach(tween => tween.kill());
+        gsap.fromTo(signMotion, { length: 0, swing: -.16 }, { length: 1.37, swing: .09, duration: .88, ease: 'power2.inOut' });
+        gsap.to(signMotion, { swing: 0, duration: 1.15, delay: .87, ease: 'elastic.out(1,.35)' });
+      } else { signMotion.length = 1.37; signMotion.swing = 0; }
+    } else if (!inView && signInView) {
+      signInView = false;
+      if (animate) gsap.getTweensOf(signMotion).forEach(tween => tween.kill());
+      signMotion.length = 0;
+      signMotion.swing = -.16;
+      signPivot.visible = false;
+    }
+    if (!inView) { trailScroll.classList.remove('is-visible'); trailScroll.inert = true; return; }
+    const length = Math.max(.001, signMotion.length);
+    signPivot.rotation.z = signMotion.swing;
+    signRopes.forEach(rope => { rope.position.y = -length * .5; rope.scale.y = length; });
+    signBoard.position.y = -length - .42;
+    signPivot.updateMatrixWorld(true);
+    signScreenCenter.set(0, 0, .08); signBoard.localToWorld(signScreenCenter); signScreenCenter.project(camera);
+    signScreenLeft.set(-1.42, -.42, .08); signBoard.localToWorld(signScreenLeft); signScreenLeft.project(camera);
+    signScreenRight.set(1.42, .42, .08); signBoard.localToWorld(signScreenRight); signScreenRight.project(camera);
+    const visible = length > 1.05 && signScreenCenter.z > -1 && signScreenCenter.z < 1 && Math.abs(signScreenCenter.x) < 1.2 && trailNote.hidden && treasure.hidden;
+    trailScroll.classList.toggle('is-visible', visible);
+    trailScroll.inert = !visible;
+    if (visible) {
+      trailScroll.style.left = `${(signScreenCenter.x * .5 + .5) * stage.clientWidth}px`;
+      trailScroll.style.top = `${(-signScreenCenter.y * .5 + .5) * stage.clientHeight}px`;
+      trailScroll.style.width = `${Math.max(85, Math.abs(signScreenRight.x - signScreenLeft.x) * stage.clientWidth * .5 + 20)}px`;
+      trailScroll.style.height = `${Math.max(45, Math.abs(signScreenRight.y - signScreenLeft.y) * stage.clientHeight * .5 + 18)}px`;
+    }
+  };
+
   // Young trees along the trail make the walk feel planted at several scales.
   const youngCount = innerWidth < 700 ? 42 : 68;
   const youngTrunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(.055, .09, 1, 10), trunkMaterial, youngCount);
@@ -1004,6 +1101,7 @@ try {
 
   function resize() {
     placeChest();
+    signPivot.scale.setScalar(innerWidth < 850 ? 1.45 : 1);
     const width = Math.max(1, stage.clientWidth), height = Math.max(1, stage.clientHeight);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
@@ -1046,6 +1144,7 @@ try {
     lookTarget.set(pathX(z - 10), 1.66 + walkHeight(z - 10), z - 10).lerp(chestFocus, focus);
     camera.lookAt(lookTarget);
     updateChest(performance.now() * .001);
+    updateArchSign();
     sun.position.set(x - 13, 21, z + 8);
     sun.target.position.set(x, 0, z - 10);
     sun.target.updateMatrixWorld();
@@ -1132,19 +1231,16 @@ document.addEventListener('keydown', event => {
   }
 });
 
-const trailScroll = document.querySelector('.trail-sign');
 const trailNote = document.getElementById('trail-note');
 const trailNoteSheet = trailNote?.querySelector('.trail-note-sheet');
 let trailNoteClosing = false;
+let trailNoteReturnFocus = trailScroll;
 function updateTrailScroll() {
-  const rect = panels[2].getBoundingClientRect();
-  const visible = rect.top < innerHeight * .54 && rect.bottom > innerHeight * .34;
-  const canShow = visible && trailNote.hidden && treasure.hidden;
-  trailScroll.classList.toggle('is-visible', canShow);
-  trailScroll.inert = !canShow;
+  updateArchSign();
 }
 function openTrailNote() {
   if (!trailNote.hidden) return;
+  trailNoteReturnFocus = document.activeElement;
   trailNote.hidden = false;
   trailNote.scrollTop = 0;
   document.body.classList.add('trail-note-open');
@@ -1163,12 +1259,13 @@ function closeTrailNote() {
     document.body.classList.remove('trail-note-open');
     trailNoteClosing = false;
     updateTrailScroll();
-    trailScroll.focus({ preventScroll: true });
+    trailNoteReturnFocus?.focus?.({ preventScroll: true });
   };
   if (animate) gsap.to(trailNote, { opacity: 0, duration: .24, ease: 'power2.in', onComplete: finish });
   else finish();
 }
 trailScroll.addEventListener('click', openTrailNote);
+document.querySelector('.trail-note-fallback')?.addEventListener('click', openTrailNote);
 trailNote.querySelector('.trail-note-close').addEventListener('click', closeTrailNote);
 addEventListener('scroll', updateTrailScroll, { passive: true });
 addEventListener('resize', updateTrailScroll, { passive: true });
