@@ -637,39 +637,36 @@ try {
     }
   }
 
-  // The second arch holds a small sign. Its ropes extend before the board swings to rest.
-  const signZ = -62.5;
+  // Hang the sign directly beneath the second arch, with both ropes rooted in its canopy.
+  const signZ = -66.75;
   const signPivot = new THREE.Group();
-  signPivot.position.set(pathX(-66), trailHeight(-66) + 3.8, signZ);
+  signPivot.position.set(pathX(-66), trailHeight(-66) + 4.75, signZ);
   signPivot.visible = false;
   scene.add(signPivot);
-  const signMotion = { length: 0, swing: -.16 };
+  const signMotion = { length: 0, swing: .035 };
   let signInView = false;
-  const ropeMaterial = new THREE.MeshStandardMaterial({ color: '#577f99', roughness: 1, metalness: 0 });
-  const plankMaterial = new THREE.MeshStandardMaterial({ color: '#95b7ca', roughness: 1, metalness: 0 });
-  const plankLowerMaterial = new THREE.MeshStandardMaterial({ color: '#779cb4', roughness: 1, metalness: 0 });
+  const ropeMaterial = new THREE.MeshStandardMaterial({ color: '#8faab8', roughness: 1, metalness: 0 });
+  const plankMaterial = new THREE.MeshStandardMaterial({ color: '#92b5c9', roughness: 1, metalness: 0 });
   const signEdgeMaterial = new THREE.MeshStandardMaterial({ color: '#5d829b', roughness: 1, metalness: 0 });
-  const signRopes = [-.62, .62].map(x => {
-    const rope = new THREE.Mesh(new THREE.CylinderGeometry(.046, .046, 1, 6), ropeMaterial);
+  const signRopes = [-.57, .57].map(x => {
+    const rope = new THREE.Mesh(new THREE.CylinderGeometry(.023, .023, 1, 6), ropeMaterial);
     rope.position.x = x;
-    rope.position.z = .16;
+    rope.position.z = .08;
     signPivot.add(rope);
+    const anchor = new THREE.Mesh(new THREE.IcosahedronGeometry(.065, 0), signEdgeMaterial);
+    anchor.position.set(x, 0, .08);
+    signPivot.add(anchor);
     return rope;
   });
   const signBoard = new THREE.Group();
   signPivot.add(signBoard);
-  const signTop = new THREE.Mesh(new THREE.BoxGeometry(2.72, .52, .12), plankMaterial);
-  signTop.position.y = .16;
-  const signBottom = new THREE.Mesh(new THREE.BoxGeometry(2.72, .32, .12), plankLowerMaterial);
-  signBottom.position.y = -.27;
-  signBoard.add(signTop, signBottom);
-  for (const x of [-1.22, 1.22]) {
-    for (const y of [.16, -.27]) {
-      const peg = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .012, 6), signEdgeMaterial);
-      peg.rotation.x = Math.PI / 2;
-      peg.position.set(x, y, .072);
-      signBoard.add(peg);
-    }
+  const signPlank = new THREE.Mesh(new THREE.BoxGeometry(2.36, .76, .1), plankMaterial);
+  signPlank.castShadow = true;
+  signBoard.add(signPlank);
+  for (const x of [-.57, .57]) {
+    const peg = new THREE.Mesh(new THREE.IcosahedronGeometry(.045, 0), signEdgeMaterial);
+    peg.position.set(x, .32, .064);
+    signBoard.add(peg);
   }
   const signCanvas = document.createElement('canvas');
   signCanvas.width = 1024;
@@ -682,46 +679,46 @@ try {
     signContext.fillStyle = '#173f59';
     signContext.textAlign = 'center';
     signContext.textBaseline = 'middle';
-    signContext.font = '176px "Instrument Serif", Georgia, serif';
+    signContext.font = '150px "Instrument Serif", Georgia, serif';
     signContext.fillText('Read me', 512, 126);
     signTexture.needsUpdate = true;
   }
   paintSign();
   document.fonts?.ready.then(paintSign);
-  const signLettering = new THREE.Mesh(new THREE.PlaneGeometry(2.46, .47), new THREE.MeshBasicMaterial({ map: signTexture, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
-  signLettering.position.set(0, .16, .069);
+  const signLettering = new THREE.Mesh(new THREE.PlaneGeometry(2.12, .52), new THREE.MeshBasicMaterial({ map: signTexture, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+  signLettering.position.set(0, 0, .057);
   signBoard.add(signLettering);
   const signScreenCenter = new THREE.Vector3();
   const signScreenLeft = new THREE.Vector3();
   const signScreenRight = new THREE.Vector3();
   updateArchSign = () => {
     const rect = panels[2].getBoundingClientRect();
-    const inView = rect.top < 0 && rect.bottom > innerHeight * .27;
+    const inView = rect.top < innerHeight * .65 && rect.bottom > innerHeight * .2;
     if (inView && !signInView) {
       signInView = true;
       signPivot.visible = true;
       if (animate) {
         gsap.getTweensOf(signMotion).forEach(tween => tween.kill());
-        gsap.fromTo(signMotion, { length: 0, swing: -.16 }, { length: 1.37, swing: .09, duration: .88, ease: 'power2.inOut' });
-        gsap.to(signMotion, { swing: 0, duration: 1.15, delay: .87, ease: 'elastic.out(1,.35)' });
-      } else { signMotion.length = 1.37; signMotion.swing = 0; }
+        gsap.fromTo(signMotion, { length: 0, swing: .035 }, { length: 1.32, swing: -.025, duration: 1.15, ease: 'power3.out' });
+        gsap.to(signMotion, { swing: 0, duration: .65, delay: 1.12, ease: 'sine.out' });
+      } else { signMotion.length = 1.32; signMotion.swing = 0; }
     } else if (!inView && signInView) {
       signInView = false;
       if (animate) gsap.getTweensOf(signMotion).forEach(tween => tween.kill());
       signMotion.length = 0;
-      signMotion.swing = -.16;
+      signMotion.swing = .035;
       signPivot.visible = false;
     }
     if (!inView) { trailScroll.classList.remove('is-visible'); trailScroll.inert = true; return; }
     const length = Math.max(.001, signMotion.length);
     signPivot.rotation.z = signMotion.swing;
     signRopes.forEach(rope => { rope.position.y = -length * .5; rope.scale.y = length; });
-    signBoard.position.y = -length - .42;
+    signBoard.position.y = -length - .37;
     signPivot.updateMatrixWorld(true);
     signScreenCenter.set(0, 0, .08); signBoard.localToWorld(signScreenCenter); signScreenCenter.project(camera);
-    signScreenLeft.set(-1.42, -.42, .08); signBoard.localToWorld(signScreenLeft); signScreenLeft.project(camera);
-    signScreenRight.set(1.42, .42, .08); signBoard.localToWorld(signScreenRight); signScreenRight.project(camera);
-    const visible = length > 1.05 && signScreenCenter.z > -1 && signScreenCenter.z < 1 && Math.abs(signScreenCenter.x) < 1.2 && trailNote.hidden && treasure.hidden;
+    signScreenLeft.set(-1.2, -.4, .08); signBoard.localToWorld(signScreenLeft); signScreenLeft.project(camera);
+    signScreenRight.set(1.2, .4, .08); signBoard.localToWorld(signScreenRight); signScreenRight.project(camera);
+    const visible = length > 1.15 && signScreenCenter.z > -1 && signScreenCenter.z < 1 && Math.abs(signScreenCenter.x) < 1.2 && trailNote.hidden && treasure.hidden;
     trailScroll.classList.toggle('is-visible', visible);
     trailScroll.inert = !visible;
     if (visible) {
