@@ -1,7 +1,9 @@
 import * as THREE from './vendor/three.module.js';
 
 const stage = document.getElementById('scene-canvas');
+const sceneFrame = stage.parentElement;
 const story = document.querySelector('.story');
+const crossing = document.querySelector('.trail-crossing');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const motion = { progress: 0 };
 const clamp = THREE.MathUtils.clamp;
@@ -13,6 +15,7 @@ const chestState = { reveal: 0, hover: 0, lid: 0, burst: 0, opened: false };
 let stops = [0, .25, .5, .75];
 let activeStop = -1;
 let siteLenis = null;
+let crossingProgress = 0;
 const animate = !reducedMotion && !!window.gsap;
 function measureStops() { const range = Math.max(1, story.scrollHeight - innerHeight); stops = panels.map(panel => clamp(panel.offsetTop / range, 0, 1)); }
 function updateChestStop() { activeStop = stops.reduce((best, stop, i) => Math.abs(stop - motion.progress) < Math.abs(stops[best] - motion.progress) ? i : best, 0); if (activeStop === CHEST_STOP && chestState.reveal === 0) { if (animate) gsap.to(chestState, { reveal: 1, duration: 1, ease: 'back.out(1.5)' }); else chestState.reveal = 1; } }
@@ -811,7 +814,7 @@ try {
     pivot.add(handle);
     return pivot;
   });
-  const gateState = { open: 0, opening: false };
+  const gateState = { clicked: false };
   const gateHitArea = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.1, .55), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
   gateHitArea.position.y = 1.2;
   gate.add(gateHitArea);
@@ -819,7 +822,7 @@ try {
   const gateProjected = new THREE.Vector3();
   const gateRaycaster = new THREE.Raycaster();
   const gatePointer = new THREE.Vector2();
-  const gateIsAvailable = () => motion.progress > .76 && !gateState.opening && story.getBoundingClientRect().bottom > innerHeight * .6;
+  const gateIsAvailable = () => motion.progress > .76 && crossingProgress < .3 && !gateState.clicked;
   const hitGate = event => {
     if (!gateIsAvailable()) return false;
     const rect = renderer.domElement.getBoundingClientRect();
@@ -829,16 +832,12 @@ try {
   };
   const openGate = () => {
     if (!gateIsAvailable()) return;
-    gateState.opening = true;
+    gateState.clicked = true;
     gateHint.hidden = true;
     renderer.domElement.style.cursor = '';
-    const continueWalk = () => {
-      const target = document.getElementById('practice').offsetTop;
-      if (siteLenis) siteLenis.scrollTo(target, { duration: 1.5 });
-      else scrollTo({ top: target, behavior: reducedMotion ? 'auto' : 'smooth' });
-    };
-    if (animate) gsap.to(gateState, { open: 1, duration: 1.05, ease: 'power2.inOut', onComplete: continueWalk });
-    else { gateState.open = 1; continueWalk(); }
+    const target = reducedMotion ? document.getElementById('practice').offsetTop : crossing.offsetTop + crossing.offsetHeight * .38;
+    if (siteLenis) siteLenis.scrollTo(target, { duration: 2.45 });
+    else scrollTo({ top: target, behavior: reducedMotion ? 'auto' : 'smooth' });
   };
   gateHint?.addEventListener('click', openGate);
   renderer.domElement.addEventListener('click', event => { if (hitGate(event)) openGate(); });
@@ -846,8 +845,10 @@ try {
     if (hitGate(event)) renderer.domElement.style.cursor = 'pointer';
   });
   function updateGate(progress) {
-    gateDoors[0].rotation.y = gateState.open * 1.22;
-    gateDoors[1].rotation.y = -gateState.open * 1.22;
+    const opening = clamp((crossingProgress - .04) / .63, 0, 1);
+    const easedOpening = opening * opening * (3 - 2 * opening);
+    gateDoors[0].rotation.y = easedOpening * 1.22;
+    gateDoors[1].rotation.y = -easedOpening * 1.22;
     gateProjected.set(gateX, gateY + 1.12, gateZ).project(camera);
     const visible = gateIsAvailable() && gateProjected.z > -1 && gateProjected.z < 1 && Math.abs(gateProjected.x) < 1;
     gateHint.hidden = !visible;
@@ -855,10 +856,7 @@ try {
       gateHint.style.left = `${(gateProjected.x * .5 + .5) * stage.clientWidth}px`;
       gateHint.style.top = `${(-gateProjected.y * .5 + .5) * stage.clientHeight}px`;
     }
-    if (gateState.opening && (progress < .58 || story.getBoundingClientRect().bottom < innerHeight * .45)) {
-      gateState.opening = false;
-      gateState.open = 0;
-    }
+    if (crossingProgress > .3 || progress < .58) gateState.clicked = false;
   }
 
   const shadowCanvas = document.createElement('canvas');
@@ -1185,9 +1183,34 @@ try {
   let walkingEnergy = 0;
   let rendering = false;
   const sceneIsVisible = () => {
-    const rect = story.getBoundingClientRect();
-    return document.visibilityState === 'visible' && rect.bottom > 0 && rect.top < innerHeight;
+    const storyRect = story.getBoundingClientRect();
+    const crossingRect = crossing.getBoundingClientRect();
+    return document.visibilityState === 'visible' && (storyRect.bottom > 0 && storyRect.top < innerHeight || crossingRect.bottom > 0 && crossingRect.top < innerHeight);
   };
+  function updateCrossing() {
+    if (reducedMotion) return;
+    const top = crossing.getBoundingClientRect().top;
+    crossingProgress = clamp((innerHeight - top) / innerHeight, 0, 1);
+    const expansion = crossingProgress * crossingProgress * (3 - 2 * crossingProgress);
+    const copyFade = clamp(crossingProgress / .38, 0, 1);
+    panels[panels.length - 1].style.opacity = String(1 - copyFade * copyFade * (3 - 2 * copyFade));
+    sceneFrame.style.setProperty('--haze-opacity', String(1 - expansion));
+    if (innerWidth > 850) {
+      const baseWidth = innerWidth <= 1050 ? .4 : .38;
+      sceneFrame.style.width = `${Math.round(innerWidth * (baseWidth + (1 - baseWidth) * expansion))}px`;
+      sceneFrame.style.top = '0px';
+    } else {
+      const baseTop = innerWidth > 600 ? Math.max(550, innerHeight * .68) : Math.max(420, innerHeight * .52);
+      sceneFrame.style.width = '';
+      sceneFrame.style.top = `${Math.round(baseTop * (1 - expansion))}px`;
+    }
+    const width = stage.clientWidth, height = stage.clientHeight;
+    if (Math.abs(renderer.domElement.width / renderer.getPixelRatio() - width) > 2 || Math.abs(renderer.domElement.height / renderer.getPixelRatio() - height) > 2) {
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height, false);
+    }
+  }
   function queueRender() {
     if (!rendering && sceneIsVisible()) {
       rendering = true;
@@ -1196,6 +1219,7 @@ try {
   }
   function render() {
     if (!sceneIsVisible()) { rendering = false; return; }
+    updateCrossing();
     const progress = reducedMotion ? 0 : clamp(motion.progress, 0, 1);
     const fogPosition = progress * (fogStops.length - 1);
     const fogIndex = Math.min(fogStops.length - 2, Math.floor(fogPosition));
@@ -1205,7 +1229,8 @@ try {
     const step = Math.abs(progress - previousProgress);
     walkingEnergy += (clamp(step * 90, 0, 1) - walkingEnergy) * .14;
     previousProgress = progress;
-    const z = 12 - progress * 92;
+    const passage = clamp((crossingProgress - .42) / .52, 0, 1);
+    const z = 12 - progress * 92 - 8 * passage * passage * (3 - 2 * passage);
     const x = pathX(z);
     const stride = reducedMotion ? 0 : Math.sin(progress * 400) * walkingEnergy;
     camera.position.set(x + stride * .012, 1.77 + walkHeight(z) + stride * .018, z);
@@ -1243,6 +1268,7 @@ try {
   addEventListener('visibilitychange', queueRender);
   addEventListener('resize', queueRender);
   new IntersectionObserver(queueRender).observe(story);
+  new IntersectionObserver(queueRender).observe(crossing);
   queueRender();
 } catch (error) {
   document.body.classList.add('webgl-unavailable');
