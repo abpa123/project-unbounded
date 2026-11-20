@@ -439,6 +439,10 @@ body.trail-note-open { overflow: hidden; }
 .trail-sign { position: absolute; z-index: 6; left: 0; top: 0; width: 0; height: 0; padding: 0; border: 0; background: transparent; opacity: 0; pointer-events: none; transform: translate(-50%, -50%); cursor: pointer; }
 .trail-sign.is-visible { opacity: 1; pointer-events: auto; }
 .trail-sign:focus-visible { outline: 3px solid #287eb7; outline-offset: 4px; }
+.gate-hint { position: absolute; z-index: 6; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 10px 14px; border: 1px solid #5d8dab; border-radius: 3px; background: #f4faff; color: #173f59; font: 500 14px/1.2 var(--sans); white-space: nowrap; box-shadow: 0 5px 15px rgba(25, 62, 84, .13); cursor: pointer; transition: background .24s, color .24s, border-color .24s; }
+.gate-hint:hover { background: #1b5577; color: #f4faff; border-color: #1b5577; }
+.gate-hint:focus-visible { outline: 3px solid #287eb7; outline-offset: 4px; }
+.gate-hint[hidden] { display: none; }
 .trail-note-fallback { display: none; margin-top: 23px; padding: 9px 0 5px; border: 0; border-bottom: 1px solid currentColor; background: transparent; color: var(--accent); font: 500 15px/1.3 var(--sans); cursor: pointer; }
 .trail-note-fallback:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 .webgl-unavailable .trail-note-fallback { display: inline-block; }

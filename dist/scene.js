@@ -761,63 +761,104 @@ try {
   youngCrowns.instanceColor.needsUpdate = true;
   scene.add(youngTrunks, youngCrowns);
 
-  // A sapling takes root beyond the hanging sign. Its growth follows the final
-  // stretch of the walk, so the third scene has a grounded destination.
-  const growthZ = -79;
-  const growthX = pathX(growthZ) + 1.25;
-  const growthY = groundHeight(growthX, growthZ);
-  const growthTree = new THREE.Group();
-  growthTree.position.set(growthX, growthY, growthZ);
-  scene.add(growthTree);
-  const growthWood = new THREE.MeshStandardMaterial({ color: '#6d91a7', roughness: 1, metalness: 0 });
-  const growthLeaves = ['#a9d5e4', '#d2e9ee', '#80b9d3', '#c1e0e9'].map(color => new THREE.MeshStandardMaterial({ color, roughness: 1, metalness: 0 }));
-  const growthStem = new THREE.Group();
-  growthTree.add(growthStem);
-  const mainStem = new THREE.Mesh(new THREE.CylinderGeometry(.12, .19, 3.45, 7), growthWood);
-  mainStem.position.y = 1.725;
-  growthStem.add(mainStem);
-  const growthBranches = [
-    { side: -1, y: 2.22, length: 1.05, angle: .77 },
-    { side: 1, y: 2.55, length: 1.15, angle: -.73 },
-    { side: -1, y: 2.92, length: .78, angle: .66 }
-  ];
-  for (const branch of growthBranches) {
-    const limb = new THREE.Mesh(new THREE.CylinderGeometry(.055, .09, branch.length, 6), growthWood);
-    limb.position.set(-branch.side * Math.sin(branch.angle) * branch.length * .43, branch.y, 0);
-    limb.rotation.z = branch.angle;
-    growthStem.add(limb);
+  // A gate closes the walk and opens into the rest of the site.
+  const gateZ = -84;
+  const gateX = pathX(gateZ);
+  const gateY = trailHeight(gateZ) + .035;
+  const gate = new THREE.Group();
+  gate.position.set(gateX, gateY, gateZ);
+  scene.add(gate);
+  const gateFrameMaterial = new THREE.MeshStandardMaterial({ color: '#537f9d', roughness: 1, metalness: 0 });
+  const gateDoorMaterial = new THREE.MeshStandardMaterial({ color: '#8eb9cf', roughness: 1, metalness: 0 });
+  const gateDetailMaterial = new THREE.MeshStandardMaterial({ color: '#d0e5ee', roughness: 1, metalness: 0 });
+  for (const side of [-1, 1]) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(.15, .2, 2.72, 8), gateFrameMaterial);
+    post.position.set(side * 1.48, 1.36, 0);
+    gate.add(post);
+    const postCap = new THREE.Mesh(new THREE.SphereGeometry(.19, 8, 6), gateDetailMaterial);
+    postCap.position.set(side * 1.48, 2.73, 0);
+    gate.add(postCap);
+    const footing = new THREE.Mesh(new THREE.IcosahedronGeometry(.31, 0), gateFrameMaterial);
+    footing.position.set(side * 1.48, .14, 0);
+    footing.scale.y = .5;
+    gate.add(footing);
   }
-  const growthCrowns = [
-    { x: 0, y: 3.62, z: 0, size: 1.08, phase: .28 },
-    { x: -.82, y: 2.88, z: .12, size: .77, phase: .42 },
-    { x: .9, y: 3.12, z: -.12, size: .84, phase: .5 },
-    { x: .25, y: 4.12, z: -.22, size: .72, phase: .61 }
-  ].map((leaf, index) => {
-    const crown = new THREE.Mesh(blobGeometry, growthLeaves[index]);
-    crown.position.set(leaf.x, leaf.y, leaf.z);
-    growthStem.add(crown);
-    return { crown, ...leaf };
+  const archCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-1.48, 2.65, 0),
+    new THREE.Vector3(-.78, 3.04, 0),
+    new THREE.Vector3(0, 3.14, 0),
+    new THREE.Vector3(.78, 3.04, 0),
+    new THREE.Vector3(1.48, 2.65, 0)
+  ]);
+  const arch = new THREE.Mesh(new THREE.TubeGeometry(archCurve, 28, .1, 7, false), gateFrameMaterial);
+  gate.add(arch);
+  const gateDoors = [-1, 1].map(side => {
+    const pivot = new THREE.Group();
+    pivot.position.set(side * 1.35, .22, .035);
+    gate.add(pivot);
+    for (let i = 0; i < 5; i++) {
+      const slat = new THREE.Mesh(new THREE.BoxGeometry(.21, 1.72, .075), i % 2 ? gateDoorMaterial : gateDetailMaterial);
+      slat.position.set(-side * (.15 + i * .245), .86, 0);
+      pivot.add(slat);
+    }
+    for (const height of [.29, 1.42]) {
+      const brace = new THREE.Mesh(new THREE.BoxGeometry(1.32, .11, .1), gateFrameMaterial);
+      brace.position.set(-side * .64, height, .04);
+      pivot.add(brace);
+    }
+    const handle = new THREE.Mesh(new THREE.SphereGeometry(.065, 8, 6), gateFrameMaterial);
+    handle.position.set(-side * 1.13, .88, .12);
+    pivot.add(handle);
+    return pivot;
   });
-  const growthBaseMaterial = new THREE.MeshStandardMaterial({ color: '#a6c8d8', roughness: 1, metalness: 0 });
-  for (let i = 0; i < 7; i++) {
-    const angle = i * Math.PI * 2 / 7;
-    const stone = new THREE.Mesh(new THREE.IcosahedronGeometry(.16 + (i % 3) * .025, 0), growthBaseMaterial);
-    stone.position.set(Math.cos(angle) * .42, .08, Math.sin(angle) * .39);
-    stone.scale.y = .5;
-    growthTree.add(stone);
-  }
-  function updateGrowthTree(progress) {
-    const start = Math.max(stops[2] + .04, stops[3] - .31);
-    const end = Math.min(1, stops[3] - .12);
-    const t = clamp((progress - start) / Math.max(.01, end - start), 0, 1);
-    const grown = t * t * (3 - 2 * t);
-    growthStem.scale.y = Math.max(.025, grown);
-    growthCrowns.forEach(({ crown, size, phase }, index) => {
-      const unfurl = clamp((t - phase) / .38, 0, 1);
-      const open = unfurl * unfurl * (3 - 2 * unfurl);
-      crown.scale.setScalar(Math.max(.001, size * open));
-      crown.rotation.y = open * (.14 + index * .08);
-    });
+  const gateState = { open: 0, opening: false };
+  const gateHitArea = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.1, .55), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+  gateHitArea.position.y = 1.2;
+  gate.add(gateHitArea);
+  const gateHint = document.querySelector('.gate-hint');
+  const gateProjected = new THREE.Vector3();
+  const gateRaycaster = new THREE.Raycaster();
+  const gatePointer = new THREE.Vector2();
+  const gateIsAvailable = () => motion.progress > .76 && !gateState.opening && story.getBoundingClientRect().bottom > innerHeight * .6;
+  const hitGate = event => {
+    if (!gateIsAvailable()) return false;
+    const rect = renderer.domElement.getBoundingClientRect();
+    gatePointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1);
+    gateRaycaster.setFromCamera(gatePointer, camera);
+    return gateRaycaster.intersectObject(gateHitArea).length > 0;
+  };
+  const openGate = () => {
+    if (!gateIsAvailable()) return;
+    gateState.opening = true;
+    gateHint.hidden = true;
+    renderer.domElement.style.cursor = '';
+    const continueWalk = () => {
+      const target = document.getElementById('practice').offsetTop;
+      if (siteLenis) siteLenis.scrollTo(target, { duration: 1.5 });
+      else scrollTo({ top: target, behavior: reducedMotion ? 'auto' : 'smooth' });
+    };
+    if (animate) gsap.to(gateState, { open: 1, duration: 1.05, ease: 'power2.inOut', onComplete: continueWalk });
+    else { gateState.open = 1; continueWalk(); }
+  };
+  gateHint?.addEventListener('click', openGate);
+  renderer.domElement.addEventListener('click', event => { if (hitGate(event)) openGate(); });
+  renderer.domElement.addEventListener('pointermove', event => {
+    if (hitGate(event)) renderer.domElement.style.cursor = 'pointer';
+  });
+  function updateGate(progress) {
+    gateDoors[0].rotation.y = gateState.open * 1.22;
+    gateDoors[1].rotation.y = -gateState.open * 1.22;
+    gateProjected.set(gateX, gateY + 1.12, gateZ).project(camera);
+    const visible = gateIsAvailable() && gateProjected.z > -1 && gateProjected.z < 1 && Math.abs(gateProjected.x) < 1;
+    gateHint.hidden = !visible;
+    if (visible) {
+      gateHint.style.left = `${(gateProjected.x * .5 + .5) * stage.clientWidth}px`;
+      gateHint.style.top = `${(-gateProjected.y * .5 + .5) * stage.clientHeight}px`;
+    }
+    if (gateState.opening && (progress < .58 || story.getBoundingClientRect().bottom < innerHeight * .45)) {
+      gateState.opening = false;
+      gateState.open = 0;
+    }
   }
 
   const shadowCanvas = document.createElement('canvas');
@@ -1174,7 +1215,7 @@ try {
     camera.lookAt(lookTarget);
     updateChest(performance.now() * .001);
     updateArchSign();
-    updateGrowthTree(progress);
+    updateGate(progress);
     sun.position.set(x - 13, 21, z + 8);
     sun.target.position.set(x, 0, z - 10);
     sun.target.updateMatrixWorld();
