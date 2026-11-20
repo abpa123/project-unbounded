@@ -1221,8 +1221,9 @@ function openTrailNote() {
   document.body.classList.add('trail-note-open');
   updateTrailScroll();
   if (animate) {
-    gsap.fromTo(trailNote, { opacity: 0 }, { opacity: 1, duration: .35, ease: 'power2.out' });
-    gsap.fromTo(trailNoteSheet, { opacity: .5, scale: .78, y: -70 }, { opacity: 1, scale: 1, y: 0, duration: .7, ease: 'power3.out' });
+    gsap.killTweensOf(trailNote);
+    gsap.fromTo(trailNote, { clipPath: 'inset(0 0 0 100%)' }, { clipPath: 'inset(0 0 0 0)', duration: .72, ease: 'power3.inOut' });
+    gsap.fromTo(trailNoteSheet.children, { opacity: 0, x: 22 }, { opacity: 1, x: 0, duration: .55, stagger: .07, delay: .22, ease: 'power2.out' });
   }
   trailNote.querySelector('.trail-note-close').focus({ preventScroll: true });
 }
@@ -1231,12 +1232,16 @@ function closeTrailNote() {
   trailNoteClosing = true;
   const finish = () => {
     trailNote.hidden = true;
+    trailNote.style.clipPath = '';
     document.body.classList.remove('trail-note-open');
     trailNoteClosing = false;
     updateTrailScroll();
     trailNoteReturnFocus?.focus?.({ preventScroll: true });
   };
-  if (animate) gsap.to(trailNote, { opacity: 0, duration: .24, ease: 'power2.in', onComplete: finish });
+  if (animate) {
+    gsap.killTweensOf(trailNote);
+    gsap.to(trailNote, { clipPath: 'inset(0 0 0 100%)', duration: .56, ease: 'power3.inOut', onComplete: finish });
+  }
   else finish();
 }
 trailScroll.addEventListener('click', openTrailNote);
