@@ -761,6 +761,65 @@ try {
   youngCrowns.instanceColor.needsUpdate = true;
   scene.add(youngTrunks, youngCrowns);
 
+  // A sapling takes root beyond the hanging sign. Its growth follows the final
+  // stretch of the walk, so the third scene has a grounded destination.
+  const growthZ = -79;
+  const growthX = pathX(growthZ) + 1.25;
+  const growthY = groundHeight(growthX, growthZ);
+  const growthTree = new THREE.Group();
+  growthTree.position.set(growthX, growthY, growthZ);
+  scene.add(growthTree);
+  const growthWood = new THREE.MeshStandardMaterial({ color: '#6d91a7', roughness: 1, metalness: 0 });
+  const growthLeaves = ['#a9d5e4', '#d2e9ee', '#80b9d3', '#c1e0e9'].map(color => new THREE.MeshStandardMaterial({ color, roughness: 1, metalness: 0 }));
+  const growthStem = new THREE.Group();
+  growthTree.add(growthStem);
+  const mainStem = new THREE.Mesh(new THREE.CylinderGeometry(.12, .19, 3.45, 7), growthWood);
+  mainStem.position.y = 1.725;
+  growthStem.add(mainStem);
+  const growthBranches = [
+    { side: -1, y: 2.22, length: 1.05, angle: .77 },
+    { side: 1, y: 2.55, length: 1.15, angle: -.73 },
+    { side: -1, y: 2.92, length: .78, angle: .66 }
+  ];
+  for (const branch of growthBranches) {
+    const limb = new THREE.Mesh(new THREE.CylinderGeometry(.055, .09, branch.length, 6), growthWood);
+    limb.position.set(-branch.side * Math.sin(branch.angle) * branch.length * .43, branch.y, 0);
+    limb.rotation.z = branch.angle;
+    growthStem.add(limb);
+  }
+  const growthCrowns = [
+    { x: 0, y: 3.62, z: 0, size: 1.08, phase: .28 },
+    { x: -.82, y: 2.88, z: .12, size: .77, phase: .42 },
+    { x: .9, y: 3.12, z: -.12, size: .84, phase: .5 },
+    { x: .25, y: 4.12, z: -.22, size: .72, phase: .61 }
+  ].map((leaf, index) => {
+    const crown = new THREE.Mesh(blobGeometry, growthLeaves[index]);
+    crown.position.set(leaf.x, leaf.y, leaf.z);
+    growthStem.add(crown);
+    return { crown, ...leaf };
+  });
+  const growthBaseMaterial = new THREE.MeshStandardMaterial({ color: '#a6c8d8', roughness: 1, metalness: 0 });
+  for (let i = 0; i < 7; i++) {
+    const angle = i * Math.PI * 2 / 7;
+    const stone = new THREE.Mesh(new THREE.IcosahedronGeometry(.16 + (i % 3) * .025, 0), growthBaseMaterial);
+    stone.position.set(Math.cos(angle) * .42, .08, Math.sin(angle) * .39);
+    stone.scale.y = .5;
+    growthTree.add(stone);
+  }
+  function updateGrowthTree(progress) {
+    const start = Math.max(stops[2] + .04, stops[3] - .31);
+    const end = Math.min(1, stops[3] - .12);
+    const t = clamp((progress - start) / Math.max(.01, end - start), 0, 1);
+    const grown = t * t * (3 - 2 * t);
+    growthStem.scale.y = Math.max(.025, grown);
+    growthCrowns.forEach(({ crown, size, phase }, index) => {
+      const unfurl = clamp((t - phase) / .38, 0, 1);
+      const open = unfurl * unfurl * (3 - 2 * unfurl);
+      crown.scale.setScalar(Math.max(.001, size * open));
+      crown.rotation.y = open * (.14 + index * .08);
+    });
+  }
+
   const shadowCanvas = document.createElement('canvas');
   shadowCanvas.width = shadowCanvas.height = 64;
   const shadowContext = shadowCanvas.getContext('2d');
@@ -1115,6 +1174,7 @@ try {
     camera.lookAt(lookTarget);
     updateChest(performance.now() * .001);
     updateArchSign();
+    updateGrowthTree(progress);
     sun.position.set(x - 13, 21, z + 8);
     sun.target.position.set(x, 0, z - 10);
     sun.target.updateMatrixWorld();
